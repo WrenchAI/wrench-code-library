@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, date
 from decimal import Decimal
 from inspect import currentframe
 from textwrap import fill
+from turtledemo.nim import COLOR
 from typing import Any, Optional, Union
 
 from ..Decorators import SingletonClass
@@ -173,12 +174,43 @@ class BaseLogger:
         random_part_2 = ''.join(random.choices(string.digits, k=4))
         return f"R-{random_part_1}-{random_part_2}"
 
-    def _log(self, level: int, msg: str, stack_info: bool = False) -> None:
+    def _log(self, level: int, msg: str, stack_info: bool = False, color = None) -> None:
         """Handles the internal logging of messages, including stack trace formatting."""
         filepath_out, line_no_out, func_name_out, sinfo_out = self._findCaller(stack_info=stack_info)
         sinfo = None
+        highlight_color = f'{Style.BRIGHT}{Color.RED}' if colorama_imported and color else ""
+        text_color = f'{Color.WHITE}{Style.BRIGHT}'
+        style_reset = f'{Style.RESET_ALL}{Color.RESET}' if colorama_imported and color else ""
         if stack_info:
-            sinfo = f"\n ---Stack Trace--- \n {sinfo_out}" if str(traceback.format_exc()) == "NoneType: None\n" else f"\n ---Python Traceback--- \n {traceback.format_exc()}"
+           # Store traceback only once
+            tb_str = traceback.format_exc()
+            summarizer_txt = "ROOT CAUSE"
+            if tb_str == "NoneType: None\n":
+                tb_str = sinfo_out
+                summarizer_txt = None
+                highlight_color = f'{Style.BRIGHT}{Color.LIGHTMAGENTA_EX}' if colorama_imported and color else ""
+            tb_list = []
+            idx = 1
+            for line in tb_str.splitlines():
+                if line == tb_str.splitlines()[-1]:
+                    if summarizer_txt is not None:
+                        tb_list.append(f" {Style.BRIGHT}{summarizer_txt}:  {highlight_color}{line.strip()}{style_reset}")
+                    tb_list.append(f"{highlight_color}{''.join(['-'] * 22)}{style_reset}\n")
+                elif line.startswith('  File "'):
+                    tb_list.append(f" {highlight_color}{idx}{style_reset}: {line.strip()}")
+                    idx += 1  # Increment index after appending each line
+                elif '(most recent call last):' in line:
+                    tb_list.append(line)
+                else:
+                    tb_list.append(f"  {text_color}{line}{style_reset}")
+
+            trace_string = '\n'.join(tb_list)
+
+            sinfo = (
+                f"{highlight_color}------Exec Trace------{style_reset}\n{trace_string}"
+                if tb_str == sinfo_out
+                else f"{highlight_color}-----Python Trace-----{style_reset}\n{trace_string}"
+            )
         record = self.logger.makeRecord(name=self.logger.name, level=level, fn=filepath_out, lno=line_no_out, msg=msg,
                                         exc_info=None, func=func_name_out, sinfo=sinfo, args=())
         self.logger.handle(record)
@@ -195,25 +227,27 @@ class BaseLogger:
         header_style = Style.BRIGHT if colorama_imported and color else ""
         header_col = Color.LIGHTWHITE_EX if colorama_imported and color else ""
         text_style = Style.NORMAL if colorama_imported and color else ""
-        style_reset = Style.RESET_ALL if colorama_imported and color else ""
+        style_reset = f'{Style.RESET_ALL}{Color.RESET}' if colorama_imported and color else ""
+        text_col = Color.LIGHTWHITE_EX if colorama_imported and color else ""
+        if color == Color.WHITE and text_col != "":
+            text_col = Color.WHITE
 
+        header_full = f'{style_reset}{header_style}{header_col}'
+        text_full = f'{style_reset}{text_style}{text_col}'
+        col_full = f'{style_reset}{text_style}{color}'
         # Prepare lines for the message with potential formatting
         lines = text.splitlines()
         colored_lines = []
-
         # Determine how to format lines based on conditions
         if len(lines) == 1 or compact:
-            colored_lines.append(f"{header_col}{text_style}{' '.join(lines)}{style_reset}")
-        elif len(lines) <= 2:
-            colored_lines.append(f"{header_col}{header_style}{lines[0]}")
-            colored_lines.extend(
-                f"{header_col}{text_style} : {line}{style_reset}" for line in lines[1:]
-            )
+            lines = [line.strip() for line in lines]
+            colored_lines.append(f"{text_full}{' | '.join(lines)}{style_reset}")
         else:
-            colored_lines.append(f"{header_col}{header_style}{lines[0]}")
+            colored_lines.append(f"{header_col}{header_style}{lines[0]}{style_reset}")
             colored_lines.extend(
-                f"{header_col}{text_style} {idx + 1}: {line}{style_reset}" for idx, line in enumerate(lines[1:])
+                f"{col_full}{(str(idx + 1)).center(8)}: {style_reset}{text_full}{line}{style_reset}" for idx, line in enumerate(lines[1:])
             )
+
 
         # Join the lines into the final text
         formatted_text = '\n'.join(colored_lines)
@@ -223,10 +257,9 @@ class BaseLogger:
             formatted_text = self._strip_ansi(formatted_text)
 
         # Set the handler format accordingly
-        self._handlerFormat(color if colorama_imported and color else "")
-
+        self._handlerFormat(level, color if colorama_imported and color else "")
         # Log the message with the internal logger
-        self._log(level, formatted_text, stack_info)
+        self._log(level, formatted_text, stack_info, color)
 
     def _strip_ansi(self, text: str) -> str:
         """
@@ -365,23 +398,31 @@ class BaseLogger:
                                      f"%(asctime)s | "
                                      f"%(message)s", datefmt='%Y-%m-%d %H:%M:%S')
 
-    def _handlerFormat(self, color: Optional[str] = None) -> None:
+    def _handlerFormat(self, level: int, color: Optional[str] = None) -> None:
         """Formats the handler with or without color based on settings."""
+        reset_var = Style.RESET_ALL
+        white_col = Color.LIGHTWHITE_EX
+        padding = '  ' if level <= 10 else ''
+        pad = 8 if level > 10 else 6
+        time_str = '[%(asctime)s]' if level > 10 else ''
+        path_str = ' %(filename)s:%(funcName)s:%(lineno)-4d'
+
+        # Determine base format
+        base_format = f"{padding}%(levelname)-{pad}s: [{self.run_id}]{time_str}{path_str}| %(message)s"
+        if self.non_verbose_mode:
+            base_format = f"{padding}%(levelname)-{pad}s: [{self.run_id}]{time_str}{path_str}| %(message)s"
+
+        # Apply color if needed
         if colorama_imported and color:
-            reset_var = Style.RESET_ALL
-            white_col = Color.LIGHTWHITE_EX
-            if not self.non_verbose_mode:
-                format_str = f"{color}%(levelname)-8s:  [{self.run_id}] %(filename)s:%(funcName)s:%(lineno)-4d | %(asctime)s | {white_col}%(message)s {reset_var}"
-            else:
-                format_str = f"{color}%(levelname)-8s: %(asctime)s | {white_col}%(message)s {reset_var}"
+            format_str = f"{color}{base_format}{reset_var}" if self.non_verbose_mode else f"{color}{base_format}{white_col}{reset_var}"
         else:
-            if not self.non_verbose_mode:
-                format_str = f"%(levelname)-8s: [{self.run_id}] %(filename)s:%(funcName)s:%(lineno)-4d | %(asctime)s | %(message)s"
-            else:
-                format_str = f"%(levelname)-8s: %(asctime)s | %(message)s"
+            format_str = base_format
+
         formatter = logging.Formatter(format_str, datefmt='%Y-%m-%d %H:%M:%S')
+
         if self.console_handler:
             self.console_handler.setFormatter(formatter)
+
 
     def _set_logging_level(self, level: Union[str, int]) -> int:
         """Sets the logging level based on a string or integer value."""
@@ -471,31 +512,13 @@ class Logger(BaseLogger):
         text = ' '.join(serialized_args)
         self._log_with_color(self.INFO_lvl, text, Color.GREEN if colorama_imported else None, stack_info, compact)
 
-    def flow(self, *args: Any, stack_info: Optional[bool] = False, compact: Optional[bool] = True) -> None:
-        """Logs a flow-level message."""
-        serialized_args = [self._custom_serializer(arg) for arg in args]
-        text = ' '.join(serialized_args)
-        self._log_with_color(self.FLOW_lvl, text, Color.CYAN if colorama_imported else None, stack_info, compact)
-
-    def context(self, *args: Any, stack_info: Optional[bool] = False, compact: Optional[bool] = True) -> None:
-        """Logs a context-level message."""
-        serialized_args = [self._custom_serializer(arg) for arg in args]
-        text = ' '.join(serialized_args)
-        self._log_with_color(self.CONTEXT_lvl, text, Color.MAGENTA if colorama_imported else None, stack_info, compact)
-
     def warning(self, *args: Any, stack_info: Optional[bool] = False, compact: Optional[bool] = True) -> None:
         """Logs a warning message."""
         serialized_args = [self._custom_serializer(arg) for arg in args]
         text = ' '.join(serialized_args)
         self._log_with_color(self.WARNING_lvl, text, Color.YELLOW if colorama_imported else None, stack_info, compact)
 
-    def HDL_WARN(self, *args: Any, stack_info: Optional[bool] = False, compact: Optional[bool] = True) -> None:
-        """Logs a handler warning message."""
-        serialized_args = [self._custom_serializer(arg) for arg in args]
-        text = ' '.join(serialized_args)
-        self._log_with_color(self.HDL_WARN_lvl, text, Color.MAGENTA if colorama_imported else None, stack_info, compact)
-
-    def error(self, *args: Any, stack_info: Optional[bool] = False, compact: Optional[bool] = False) -> None:
+    def error(self, *args: Any, stack_info: Optional[bool] = True, compact: Optional[bool] = False) -> None:
         """Logs an error message."""
         if any(isinstance(arg, Exception) for arg in args):
             stack_info = True
@@ -510,18 +533,6 @@ class Logger(BaseLogger):
         formatted_data = self._format_data(data, object_name, content, wrap_length, max_rows, indent=indent)
         self._log_with_color(self.DATA_lvl, formatted_data, Color.BLUE if colorama_imported else None, stack_info, False)
 
-    def HDL_ERR(self, *args: Any, stack_info: Optional[bool] = False, compact: Optional[bool] = True) -> None:
-        """Logs a handler error message."""
-        serialized_args = [self._custom_serializer(arg) for arg in args]
-        text = ' '.join(serialized_args)
-        self._log_with_color(self.HDL_ERR_lvl, text, Color.LIGHTMAGENTA_EX if colorama_imported else None, stack_info, compact)
-
-    def RECV_ERR(self, *args: Any, stack_info: Optional[bool] = False, compact: Optional[bool] = True) -> None:
-        """Logs a recoverable error message."""
-        serialized_args = [self._custom_serializer(arg) for arg in args]
-        text = ' '.join(serialized_args)
-        self._log_with_color(self.RCV_ERR_lvl, text, Color.LIGHTRED_EX if colorama_imported else None, stack_info, compact)
-
     def critical(self, *args: Any, stack_info: Optional[bool] = False, compact: Optional[bool] = False) -> None:
         """Logs a critical error message."""
         serialized_args = [self._custom_serializer(arg) for arg in args]
@@ -532,20 +543,24 @@ class Logger(BaseLogger):
         """Logs a debug message."""
         serialized_args = [self._custom_serializer(arg) for arg in args]
         text = ' '.join(serialized_args)
-        self._log_with_color(self.DEBUG_lvl, text, Color.LIGHTWHITE_EX if colorama_imported else None, stack_info, compact)
+        self._log_with_color(self.DEBUG_lvl, text, Color.WHITE if colorama_imported else None, stack_info, compact)
 
     # Aliases
     log_info = INFO = info
-    log_context = CONTEXT = context
-    log_flow = FLOW = flow
     log_warning = WARNING = warning
-    log_handled_warning = log_hdl_warn = HDL_WARN
     log_error = ERROR = error
     log_data = print_data = DATA = data
-    log_handled_error = log_hdl_err = HDL_ERR
-    log_recoverable_error = log_recv_err = RECV_ERR
     log_critical = CRITICAL = critical
     log_debug = DEBUG = debug
+
+
+    log_context = CONTEXT = context = info  # depreciated
+    log_flow = FLOW = flow = info   # depreciated
+    log_handled_warning = log_hdl_warn = HDL_WARN = warning    # depreciated
+    log_handled_error = log_hdl_err = HDL_ERR = error    # depreciated
+    log_recoverable_error = log_recv_err = RECV_ERR = error    # depreciated
+
+
 
     def start_time(self) -> None:
         """Starts a timer for measuring elapsed time in logging."""
@@ -600,4 +615,3 @@ class Logger(BaseLogger):
 
 
 # Provide backward compatibility
-
