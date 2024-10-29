@@ -131,7 +131,7 @@ def test_logger_basic(caplog):
     assert "Warning message" in caplog.text
     logger.error(ValueError("Error message"))
     assert "Error message" in caplog.text
-    assert "---Stack Trace---" in caplog.text
+    assert "------Exec Trace------" in caplog.text
 
 def test_logger_flow(caplog):
     

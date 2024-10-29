@@ -166,3 +166,4 @@ class single_quote_decoder(json.JSONDecoder):
 
                 # Escape it to \"
                 js_str = js_str[:prev_quote_index] + "\\" + js_str[prev_quote_index:]
+
