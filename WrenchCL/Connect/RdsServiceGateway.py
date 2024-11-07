@@ -56,7 +56,7 @@ class RdsServiceGateway:
             self.connection: Optional[RDSClient] = client_manager.get_db_client()
 
     def set_test_mode(self, test_mode: bool = False):
-        logger.info("Test mode activated, database commits will not be commited.")
+        logger.warning("Test mode activated, database commits will not be commited.")
         self.test_mode = test_mode
 
     def get_connection(self) -> psycopg2.extensions.connection:
@@ -89,12 +89,12 @@ class RdsServiceGateway:
         try:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
                 if show_query:
-                    logger.context("Mogrified Query:", cursor.mogrify(query, payload))
+                    logger.context("Mogrified Query:\n", cursor.mogrify(query, payload))
                 else:
-                    logger.debug("Mogrified Query:", cursor.mogrify(query, payload))
+                    logger.debug("Mogrified Query:\n", cursor.mogrify(query, payload))
                 cursor.execute(query, payload)
                 data = cursor.fetchall() if fetchall else cursor.fetchone()
-                logger.debug("Fetched data: %s", str(data)[:100] if fetchall else str(data))
+                logger.debug("Fetched data\n: %s", str(data)[:100] if fetchall else str(data))
             if return_dict and data is not None:
                 return [dict(row) for row in data] if fetchall else dict(data)
             elif data is None:
@@ -143,7 +143,7 @@ class RdsServiceGateway:
             test_mode = True
 
         if test_mode:
-            logger.debug("Running RDSServiceGateway in test mode.")
+            logger.warning("Running RDSServiceGateway in test mode.")
 
         try:
             # Convert payload into a tuple if it's a single value or list
