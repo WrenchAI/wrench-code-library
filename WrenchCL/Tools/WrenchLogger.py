@@ -539,7 +539,10 @@ class Logger(BaseLogger):
         try:
             import pandas as pd
         except ImportError:
-            pd = None
+            class pd:
+                def __init__(self):
+                    self.options = {}
+            pd = pd()
         option_bu = pd.options
         object_name = object_name if object_name else f"Type: {type(data).__name__}"
         formatted_data = self._format_data(data, object_name, content, wrap_length, max_rows, indent=indent)
