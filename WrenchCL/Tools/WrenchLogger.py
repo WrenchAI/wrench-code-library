@@ -549,7 +549,6 @@ class Logger(BaseLogger):
         self._log_with_color(self.DATA_lvl, formatted_data, Color.BLUE if colorama_imported else None, stack_info, False)
         pd.options = option_bu
 
-
     def critical(self, *args: Any, stack_info: Optional[bool] = False, compact: Optional[bool] = False) -> None:
         """Logs a critical error message."""
         serialized_args = [self._custom_serializer(arg) for arg in args]
