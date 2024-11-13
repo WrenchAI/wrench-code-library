@@ -14,6 +14,7 @@ from textwrap import fill
 from turtledemo.nim import COLOR
 from typing import Any, Optional, Union
 
+
 from ..Decorators import SingletonClass
 
 try:
@@ -207,9 +208,9 @@ class BaseLogger:
             trace_string = '\n'.join(tb_list)
 
             sinfo = (
-                f"{highlight_color}------Exec Trace------{style_reset}\n{trace_string}"
+                f"\n{highlight_color}------Exec Trace------{style_reset}\n{trace_string}"
                 if tb_str == sinfo_out
-                else f"{highlight_color}-----Python Trace-----{style_reset}\n{trace_string}"
+                else f"\n{highlight_color}-----Python Trace-----{style_reset}\n{trace_string}"
             )
         record = self.logger.makeRecord(name=self.logger.name, level=level, fn=filepath_out, lno=line_no_out, msg=msg,
                                         exc_info=None, func=func_name_out, sinfo=sinfo, args=())
@@ -305,8 +306,14 @@ class BaseLogger:
             formatted_text = json.dumps(serialize(data), indent=indent, default=self._custom_serializer)
         elif pd and isinstance(data, pd.DataFrame):
             prefix_str = f"DataType: {type(data).__name__} | Shape: {data.shape[0]} rows | {data.shape[1]} columns"
-            with pd.option_context('display.max_rows', max_rows, 'display.max_columns', None):
-                formatted_text = str(data)
+            pd.set_option(
+                'display.max_rows', max_rows,
+                'display.max_columns', None,
+                'display.width', None,           # Adjust width as needed
+                'display.max_colwidth', wrap_length or 50,
+                'display.colheader_justify', 'center'
+            )
+            formatted_text = str(data)
         elif isinstance(data, (list, tuple, set)):
             prefix_str = f"DataType: {type(data).__name__} | Length: {len(data)}"
             formatted_text = json.dumps(serialize(data), indent=indent, default=self._custom_serializer)
@@ -527,11 +534,20 @@ class Logger(BaseLogger):
         self._log_with_color(self.ERROR_lvl, text, Color.RED if colorama_imported else None, stack_info, compact)
 
     def data(self, data: Any, object_name: Optional[str] = None, content: Optional[bool] = True, wrap_length: Optional[int] = None,
-             max_rows: Optional[int] = None, stack_info: Optional[bool] = False, indent: Optional[int] = 4) -> None:
+             max_rows: Optional[int] = None, stack_info: Optional[bool] = False, indent: Optional[int] = 4, truncate_values = True) -> None:
         """Logs a data message with optional formatting."""
+        try:
+            import pandas as pd
+        except ImportError:
+            class pd:
+                def __init__(self):
+                    self.options = {}
+            pd = pd()
+        option_bu = pd.options
         object_name = object_name if object_name else f"Type: {type(data).__name__}"
         formatted_data = self._format_data(data, object_name, content, wrap_length, max_rows, indent=indent)
         self._log_with_color(self.DATA_lvl, formatted_data, Color.BLUE if colorama_imported else None, stack_info, False)
+        pd.options = option_bu
 
     def critical(self, *args: Any, stack_info: Optional[bool] = False, compact: Optional[bool] = False) -> None:
         """Logs a critical error message."""

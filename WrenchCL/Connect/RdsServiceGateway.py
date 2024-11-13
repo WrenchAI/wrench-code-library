@@ -43,6 +43,7 @@ class RdsServiceGateway:
         :type max_pool_size: int
         """
         self.multithreaded = multithreaded
+        self.test_mode = False
         client_manager = AwsClientHub()
         self.config = client_manager.get_config()
         self.db_uri = client_manager.get_db_uri()
@@ -53,6 +54,10 @@ class RdsServiceGateway:
         else:
             # Establish a single connection if multithreading is not enabled
             self.connection: Optional[RDSClient] = client_manager.get_db_client()
+
+    def set_test_mode(self, test_mode: bool = False):
+        logger.warning("Test mode activated, database commits will not be commited.")
+        self.test_mode = test_mode
 
     def get_connection(self) -> psycopg2.extensions.connection:
         """
@@ -84,12 +89,12 @@ class RdsServiceGateway:
         try:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
                 if show_query:
-                    logger.context("Mogrified Query:", cursor.mogrify(query, payload))
+                    logger.context("Mogrified Query:\n", cursor.mogrify(query, payload))
                 else:
-                    logger.debug("Mogrified Query:", cursor.mogrify(query, payload))
+                    logger.debug("Mogrified Query:\n", cursor.mogrify(query, payload))
                 cursor.execute(query, payload)
                 data = cursor.fetchall() if fetchall else cursor.fetchone()
-                logger.debug("Fetched data: %s", str(data)[:100] if fetchall else str(data))
+                logger.debug("Fetched data\n: %s", str(data)[:100] if fetchall else str(data))
             if return_dict and data is not None:
                 return [dict(row) for row in data] if fetchall else dict(data)
             elif data is None:
@@ -108,33 +113,80 @@ class RdsServiceGateway:
             self.release_connection(conn)
 
     def update_database(self, query: str, payload: Union[tuple, list[tuple], DataFrame], returning: bool = False,
-            column_order: Optional[List[str]] = None, raise_on_error: bool = True) -> Optional[List[tuple]]:
+                        column_order: Optional[List[str]] = None, raise_on_error: bool = True, test_mode: bool = False) -> Optional[List[tuple]]:
         """
-        Updates the database by executing the given query with the provided payload.
+        Updates the database by executing the specified SQL query with the given payload.
+
+        Handles different payload formats including a single tuple, a list of tuples, or a DataFrame. Supports optional
+        fetching of return values if `returning` is True. Commits the transaction by default unless in test mode, where
+        changes are rolled back.
+
+        Args:
+            query (str): SQL query to execute.
+            payload (Union[tuple, list[tuple], DataFrame]): Data to be used in the query. Can be a single tuple, a list of tuples,
+                or a DataFrame.
+            returning (bool): If True, fetches and returns results after executing the query.
+            column_order (Optional[List[str]]): Order of columns when payload is a DataFrame. Ensures correct insertion order.
+            raise_on_error (bool): If True, raises exceptions on errors; if False, logs errors without raising.
+            test_mode (bool): If True, rolls back the transaction instead of committing changes to the database.
+
+        Returns:
+            Optional[List[tuple]]: List of tuples containing the query results if `returning` is True, otherwise None.
+
+        Raises:
+            ValueError: If column order is missing for DataFrame payloads or if the payload has incompatible data for batch processing.
+            psycopg2.DataError: If no data was committed in batch processing.
         """
         conn = self.get_connection()
+
+        if self.test_mode:
+            test_mode = True
+
+        if test_mode:
+            logger.warning("Running RDSServiceGateway in test mode.")
+
         try:
+            # Convert payload into a tuple if it's a single value or list
             payload = self.convert_payload(payload)
+            logger.debug(f"Converted payload: {payload}")
+
             if isinstance(payload, tuple):
+                logger.debug("Payload is a single tuple.")
+                # Execute query for single tuple payload
                 with conn.cursor() as cursor:
                     cursor.execute(query, payload)
                     return_value = cursor.fetchall() if returning else None
-                    conn.commit()
+                    if not test_mode:
+                        conn.commit()
+                        logger.debug("Transaction committed successfully.")
+                    else:
+                        conn.rollback()
+                        logger.debug("Transaction rolled back in test mode.")
                     return return_value
+
             elif isinstance(payload, list) and all(isinstance(item, tuple) for item in payload):
+                logger.debug("Payload is a list of tuples.")
+                # Execute batch query for list of tuples payload
                 with conn.cursor() as cursor:
                     psycopg2.extras.execute_values(cursor, query, payload, page_size=self.config.db_batch_size)
                     return_value = cursor.fetchall() if returning else None
-                    conn.commit()
+                    if not test_mode:
+                        conn.commit()
+                        logger.debug("Transaction committed successfully.")
+                    else:
+                        conn.rollback()
+                        logger.debug("Transaction rolled back in test mode.")
                     return return_value
+
             elif PANDAS_AVAILABLE and isinstance(payload, DataFrame) and column_order:
+                logger.debug("Payload is a DataFrame with specified column order.")
+                # Batch processing for DataFrame payloads with specified column order
                 if returning:
-                    logger.error("Returning values not compatible with batch processing, please use dictionary input")
-                    raise ValueError(
-                        "Returning values not compatible with batch processing, please use dictionary input")
+                    raise ValueError("Returning values not compatible with batch processing, please use dictionary input")
                 if not set(column_order).issubset(payload.columns):
                     missing_columns = set(column_order) - set(payload.columns)
                     raise ValueError(f"The following columns are missing from the payload: {missing_columns}")
+
                 with conn.cursor() as cursor:
                     data_batch = []
                     batch_counter = 1
@@ -144,8 +196,7 @@ class RdsServiceGateway:
                         data_batch.append(tuple(getattr(row, col) for col in column_order))
 
                         if len(data_batch) == self.config.db_batch_size or i == len(payload) - 1:
-                            psycopg2.extras.execute_values(cursor, query, data_batch,
-                                                           page_size=self.config.db_batch_size)
+                            psycopg2.extras.execute_values(cursor, query, data_batch, page_size=self.config.db_batch_size)
                             data_batch = []
                             logger.debug(f"Processed batch {batch_counter}/{total_batches} successfully")
                             batch_counter += 1
@@ -153,20 +204,29 @@ class RdsServiceGateway:
                     if batch_counter == 1:
                         raise psycopg2.DataError("Nothing to commit")
 
-                    conn.commit()
+                    if not test_mode:
+                        conn.commit()
+                        logger.debug("Transaction committed successfully.")
+                    else:
+                        conn.rollback()
+                        logger.debug("Transaction rolled back in test mode.")
+
         except Exception as e:
             conn.rollback()
             if isinstance(e, IndexError):
                 try:
                     logger.error(f"Error processing batch: IndexError | Got {query.count('%s')} placeholders and {len(payload)} values. {e}")
-                except:
-                    logger.error(f"Error processing batch: {str(e)}", stack_info=True)
+                except Exception as nested_exception:
+                    logger.error(f"Error processing batch: {str(e)}; Nested error: {str(nested_exception)}", stack_info=True)
             else:
                 logger.error(f"Error processing batch: {str(e)}", stack_info=True)
             if raise_on_error:
                 raise e
         finally:
             self.release_connection(conn)
+
+
+
 
     def format_sql_query(self, query: str, payload: tuple) -> None:
         """
@@ -247,3 +307,10 @@ class RdsServiceGateway:
         else:
             # Return value as-is for basic types like int, float, bool, and None
             return value
+
+    # Aliases
+    insert_data = update_database
+    execute_insert_query = update_database
+
+    fetch_data = get_data
+    execute_fetch_query = get_data

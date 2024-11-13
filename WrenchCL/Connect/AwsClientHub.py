@@ -272,6 +272,7 @@ class AwsClientHub:
         :raises Exception: If there is an issue initializing the S3 client.
         """
         try:
+            logger.debug(f"Creating session with profile: {self.aws_session_client.profile_name} and region: {self.config.region_name} for service [s3]...")
             self.s3_client = self.aws_session_client.client('s3', region_name=self.config.region_name, config=config)
             logger.debug(f"S3 client initialized with region: {self.config.region_name}")
         except Exception as e:
@@ -288,8 +289,9 @@ class AwsClientHub:
         :raises Exception: If there is an issue initializing the AWS service client.
         """
         try:
+            logger.debug(f"Creating session with profile: {self.aws_session_client.profile_name} and region: {self.config.region_name} for service [{aws_service}]")
             client = self.aws_session_client.client(aws_service, region_name=self.config.region_name)
-            logger.debug(f"{aws_service} client initialized with region: {self.config.region_name}")
+            logger.debug(f"{aws_service} client initialized with region: {self.config.region_name} and profile: {self.aws_session_client.profile_name}")
             return client
         except Exception as e:
             logger.error(f"An exception occurred when initializing connection to {aws_service}: {e}")
@@ -311,6 +313,7 @@ class AwsClientHub:
         """
         try:
             sec_id = self.config.secret_arn if secret_id is None else secret_id
+            logger.debug(f"Creating session with profile: {self.config.aws_profile}")
             self.aws_session_client = boto3.session.Session(profile_name=self.config.aws_profile)
             client_object = self.aws_session_client.client('secretsmanager', region_name=self.config.region_name)
             secret_data = client_object.get_secret_value(SecretId=sec_id)['SecretString']
