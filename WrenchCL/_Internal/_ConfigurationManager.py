@@ -19,6 +19,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from ..Exceptions import InvalidConfigurationException
 from ..Tools import logger
 
 
@@ -76,14 +77,17 @@ class _ConfigurationManager:
         try:
             self._initialize_env()
         except Exception as e:
-            logger.info(f"No env file found to load, using existing variables. Error: {e}")
+            logger.debug(f"No env file found to load, using existing variables. Error: {e}")
         self._init_from_env()
         self._init_from_kwargs(kwargs)
 
         if self.secret_arn is None:
-            err_string = "Error in loading environment variables, Secret ARN is missing"
-            logger.error(err_string)
-            raise ValueError(err_string)
+            raise InvalidConfigurationException(
+                config_name="Secret ARN",
+                reason="Missing environment variable or configuration.",
+                message="Error in loading environment variables: Secret ARN is missing."
+            )
+
 
         # Log configuration after initialization
         logger.debug(self._log_safe_config())
