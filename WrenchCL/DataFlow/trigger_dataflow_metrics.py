@@ -26,12 +26,7 @@ from typing import Any, Dict, Optional
 from ..Tools import logger
 
 
-def trigger_dataflow_metrics(
-        event: Dict[str, Any],
-        context: Any,
-        lambda_client: Any,
-        **kwargs: Any
-) -> None:
+def trigger_dataflow_metrics(event: Dict[str, Any], context: Any, lambda_client: Any, **kwargs: Any) -> None:
     """
     Triggers comprehensive dataflow metrics for a given job.
 
@@ -87,51 +82,43 @@ def trigger_dataflow_metrics(
         end_time = time.time()
         bootstrap_duration = end_time - kwargs.get('start_time', end_time)
 
-        performance_metrics = {
-            'trigger': kwargs.get('job_type'),
-            'job_name': kwargs.get('job_name'),
-            'state_machine_name': event.get('state_machine_name'),
-            'state_name': event.get('state_name'),
-            'workflow_id': event.get('statemachine_id'),
-            'job_type': kwargs.get('job_type'),
-            'job_run_state': 'Success' if kwargs.get('status_code') == 200 else 'Failure',
-            'client_id': str(kwargs.get('client_id')) if isinstance(kwargs.get('client_id'), uuid.UUID) else kwargs.get('client_id'),
-            'client_job_processing_datetime': event.get('processing_datetime'),
-            'job_run_started_on': event.get('execution_starttime'),
-            'duration': None,
-            'bootstrap_duration': bootstrap_duration,
-            'lifecycle_duration': None,
-            'max_memory_used': None,
-            'rows_input': kwargs.get('rows_input'),
-            'rows_input_detail': kwargs.get('rows_input_detail'),
-            'rows_output': kwargs.get('rows_output'),
-            'rows_output_detail': kwargs.get('rows_output_detail'),
-            'uuids_input_detail': kwargs.get('uuids_input_detail'),
-            'uuids_output': kwargs.get('uuids_output'),
-            'exception_msg': kwargs.get('exception_msg'),
-            's3_output_path': kwargs.get('s3_output_path'),
-            'rds_target_table': kwargs.get('rds_target_table'),
-            'rds_input_table': kwargs.get('rds_input_table'),
-            'job_id': event.get('job_id'),
-            'memory_limit_in_mb': getattr(context, 'memory_limit_in_mb', None),
-            'time_remaining_in_ms': getattr(context, 'get_remaining_time_in_millis', lambda: None)(),
-            'source_id': getattr(context, 'aws_request_id', None),
-            'log_stream_name': getattr(context, 'log_stream_name', None),
-            'log_group_name': getattr(context, 'log_group_name', None),
-            'state_entered_time': event.get('state_enteredtime'),
-            'status_code': kwargs.get('status_code'),
-            'message': kwargs.get('message'),
-            'action': kwargs.get('action')
-        }
+        # Construct performance metrics
+        performance_metrics = {'trigger': kwargs.get('job_type'), 'job_name': kwargs.get('job_name'),
+                               'state_machine_name': event.get('state_machine_name'),
+                               'state_name': event.get('state_name'), 'workflow_id': event.get('statemachine_id'),
+                               'job_type': kwargs.get('job_type'),
+                               'job_run_state': 'Success' if kwargs.get('status_code') == 200 else 'Failure',
+                               'client_id': str(kwargs.get('client_id')) if isinstance(kwargs.get('client_id'),
+                                                                                       uuid.UUID) else kwargs.get(
+                                   'client_id'), 'client_job_processing_datetime': event.get('processing_datetime'),
+                               'job_run_started_on': event.get('execution_starttime'), 'duration': None,
+                               'bootstrap_duration': bootstrap_duration, 'lifecycle_duration': None,
+                               'max_memory_used': None, 'rows_input': kwargs.get('rows_input'),
+                               'rows_input_detail': kwargs.get('rows_input_detail'),
+                               'rows_output': kwargs.get('rows_output'),
+                               'rows_output_detail': kwargs.get('rows_output_detail'),
+                               'uuids_input_detail': kwargs.get('uuids_input_detail'),
+                               'uuids_output': kwargs.get('uuids_output'), 'exception_msg': kwargs.get('exception_msg'),
+                               's3_output_path': kwargs.get('s3_output_path'),
+                               'rds_target_table': kwargs.get('rds_target_table'),
+                               'rds_input_table': kwargs.get('rds_input_table'), 'job_id': event.get('job_id'),
+                               'memory_limit_in_mb': getattr(context, 'memory_limit_in_mb', None),
+                               'time_remaining_in_ms': getattr(context, 'get_remaining_time_in_millis', lambda: None)(),
+                               'source_id': getattr(context, 'aws_request_id', None),
+                               'log_stream_name': getattr(context, 'log_stream_name', None),
+                               'log_group_name': getattr(context, 'log_group_name', None),
+                               'state_entered_time': event.get('state_enteredtime'),
+                               'status_code': kwargs.get('status_code'), 'message': kwargs.get('message'),
+                               'action': kwargs.get('action')}
 
-        lambda_client.invoke(
-            FunctionName='dataflow-metrics',
-            InvocationType='Event',
-            Payload=json.dumps(performance_metrics, default=str)
-        )
-        logger.info('Invoked dataflow-metrics lambda')
+        try:
+            lambda_client.invoke(FunctionName='dataflow-metrics', InvocationType='Event',
+                                 Payload=json.dumps(performance_metrics, default=str))
+            logger.info('Dataflow-metrics Lambda invoked successfully.')
+        except Exception as invoke_error:
+            logger.warning(f'Failed to invoke dataflow-metrics Lambda: {invoke_error}')
     except Exception as e:
-        logger.error(f'Failed to invoke dataflow-metrics lambda {e}')
+        logger.warning(f'Failed to invoke dataflow-metrics Lambda: {e}')
 
 
 def trigger_minimum_dataflow_metrics(event: Dict[str, Any], context: Any, lambda_client: Any, job_type: str,
@@ -162,12 +149,11 @@ def trigger_minimum_dataflow_metrics(event: Dict[str, Any], context: Any, lambda
     :param exception_msg: The exception message encountered during the job execution (optional).
     :type exception_msg: str, optional
     """
-    trigger_dataflow_metrics(event=event,
-                             context=context,
-                             lambda_client=lambda_client,
-                             job_type=job_type,
-                             job_name=job_name,
-                             status_code=status_code,
-                             client_id=client_id,
-                             action=action,
-                             exception_msg=exception_msg)
+    try:
+        logger.debug("Preparing to trigger minimum dataflow metrics.")
+        trigger_dataflow_metrics(event=event, context=context, lambda_client=lambda_client, job_type=job_type,
+                                 job_name=job_name, status_code=status_code, client_id=client_id, action=action,
+                                 exception_msg=exception_msg)
+        logger.info("Minimum dataflow metrics triggered successfully.")
+    except Exception as e:
+        pass
