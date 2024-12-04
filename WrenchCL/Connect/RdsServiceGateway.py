@@ -9,17 +9,17 @@ import psycopg2.extensions
 import psycopg2.extras
 from mypy_boto3_rds.client import RDSClient
 from psycopg2.pool import ThreadedConnectionPool
+
+from .._Internal._MockPandas import MockPandas
 from .AwsClientHub import AwsClientHub
 from ..Decorators.SingletonClass import SingletonClass
 from ..Tools import logger
 
 try:
     import pandas as pd
-    from pandas import DataFrame
-    PANDAS_AVAILABLE = True
 except ImportError:
-    PANDAS_AVAILABLE = False
-    DataFrame = object
+    pd = MockPandas()
+DataFrame = pd.DataFrame
 
 @SingletonClass
 class RdsServiceGateway:
@@ -112,7 +112,7 @@ class RdsServiceGateway:
         finally:
             self.release_connection(conn)
 
-    def update_database(self, query: str, payload: Union[tuple, list[tuple], DataFrame], returning: bool = False,
+    def update_database(self, query: str, payload: Union[tuple, list[tuple], pd.DataFrame], returning: bool = False,
                         column_order: Optional[List[str]] = None, raise_on_error: bool = True, test_mode: bool = False) -> Optional[List[tuple]]:
         """
         Updates the database by executing the specified SQL query with the given payload.
@@ -178,7 +178,7 @@ class RdsServiceGateway:
                         logger.debug("Transaction rolled back in test mode.")
                     return return_value
 
-            elif PANDAS_AVAILABLE and isinstance(payload, DataFrame) and column_order:
+            elif isinstance(payload, pd.DataFrame) and column_order:
                 logger.debug("Payload is a DataFrame with specified column order.")
                 # Batch processing for DataFrame payloads with specified column order
                 if returning:
@@ -252,7 +252,7 @@ class RdsServiceGateway:
         self.release_connection(conn)
         return cursor
 
-    def convert_payload(self, payload: Tuple[Any, ...]) -> DataFrame | tuple[Any, ...]:
+    def convert_payload(self, payload: Tuple[Any, ...]) -> pd.DataFrame | tuple[Any, ...]:
         """
         Converts elements within a tuple payload to types compatible with psycopg2.
 
@@ -261,16 +261,13 @@ class RdsServiceGateway:
         :return: A tuple with converted values.
         :rtype: Tuple[Any, ...]
         """
-        if PANDAS_AVAILABLE:
-            if isinstance(payload, DataFrame):
-                return self._convert_dataframe_types(payload)
-            else:
-                return tuple(self._convert_value(val) for val in payload)
+        if isinstance(payload, DataFrame):
+            return self._convert_dataframe_types(payload)
         else:
             return tuple(self._convert_value(val) for val in payload)
 
     @staticmethod
-    def _convert_dataframe_types(df: DataFrame) -> DataFrame:
+    def _convert_dataframe_types(df: pd.DataFrame) -> pd.DataFrame:
         """
         Converts DataFrame columns to types compatible with psycopg2.
         """
