@@ -14,7 +14,7 @@ from textwrap import fill
 from turtledemo.nim import COLOR
 from typing import Any, Optional, Union
 
-
+from .._Internal._MockPandas import MockPandas
 from ..Decorators import SingletonClass
 
 try:
@@ -27,7 +27,12 @@ except ImportError:
     Color = None
     Style = None
     colorama_imported = False
-    logging.warning("colorama package not found. Colored logging is disabled.")
+    logging.debug("colorama package not found. Colored logging is disabled.")
+
+try:
+    import pandas as pd
+except ImportError:
+    pd = MockPandas()
 
 _srcfile = os.path.normcase(__file__)
 _logging_src = os.path.normcase(logging.addLevelName.__code__.co_filename)
@@ -296,11 +301,6 @@ class BaseLogger:
                 except TypeError:
                     return str(obj)
 
-        try:
-            import pandas as pd
-        except ImportError:
-            pd = None
-
         if isinstance(data, dict):
             prefix_str = f"DataType: {type(data).__name__} | Length: {len(data)}"
             formatted_text = json.dumps(serialize(data), indent=indent, default=self._custom_serializer)
@@ -536,13 +536,6 @@ class Logger(BaseLogger):
     def data(self, data: Any, object_name: Optional[str] = None, content: Optional[bool] = True, wrap_length: Optional[int] = None,
              max_rows: Optional[int] = None, stack_info: Optional[bool] = False, indent: Optional[int] = 4, truncate_values = True) -> None:
         """Logs a data message with optional formatting."""
-        try:
-            import pandas as pd
-        except ImportError:
-            class pd:
-                def __init__(self):
-                    self.options = {}
-            pd = pd()
         option_bu = pd.options
         object_name = object_name if object_name else f"Type: {type(data).__name__}"
         formatted_data = self._format_data(data, object_name, content, wrap_length, max_rows, indent=indent)
