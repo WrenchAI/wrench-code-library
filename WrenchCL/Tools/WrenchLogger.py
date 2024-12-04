@@ -527,8 +527,6 @@ class Logger(BaseLogger):
 
     def error(self, *args: Any, stack_info: Optional[bool] = True, compact: Optional[bool] = False) -> None:
         """Logs an error message."""
-        if any(isinstance(arg, Exception) for arg in args):
-            stack_info = True
         serialized_args = [self._custom_serializer(arg) for arg in args]
         text = ' '.join(serialized_args)
         self._log_with_color(self.ERROR_lvl, text, Color.RED if colorama_imported else None, stack_info, compact)
