@@ -12,12 +12,11 @@
 #
 #  For inquiries, please contact Willem van der Schans through the official Wrench.AI channels or directly via GitHub at [Kydoimos97](https://github.com/Kydoimos97).
 #
-import logging
 from sshtunnel import SSHTunnelForwarder
 from ..Tools import logger
 
 
-logging.getLogger("paramiko").setLevel(40)
+logger.suppress_package_logger("paramiko")
 
 class _SshTunnelManager:
     """
@@ -66,7 +65,7 @@ class _SshTunnelManager:
         safe_config = {k: (mask_sensitive(v) if k == 'PGPASSWORD' else v) for k, v in self.config.items()}
         safe_ssh_config = {k: (mask_sensitive(v) if k in ['SSH_PASSWORD', 'SSH_KEY_PATH'] else v) for k, v in self.ssh_config.items()}
 
-        logger.debug(f"SSH Tunnel Manager initialized with safe config: {safe_config}")
+        logger.debug(f"SSH Tunnel Manager initialized with config: {safe_config}")
         logger.debug(f"SSH-specific configuration: {safe_ssh_config}")
 
     def start_tunnel(self):

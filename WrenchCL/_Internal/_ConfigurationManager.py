@@ -19,8 +19,54 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from ..Exceptions import InvalidConfigurationException
 from ..Tools import logger
 
+MISSING_KEYS_MESSAGE = """
+Error in loading environment variables: Missing required key: 'SECRET_ARN'.
+
+Required Variables:
+    - SECRET_ARN: Required for fetching AWS secrets (mandatory).
+
+Required When Overriding Defaults:
+    - AWS_PROFILE: Optional; if the default AWS profile in ~/.aws/credentials is sufficient.
+    - REGION_NAME: Optional; if the default region ('us-east-1') is sufficient.
+
+SSH Tunnel Creation. Optional; (for RDS/Bastion):
+    - SSH_SERVER: SSH server address.
+    - SSH_PORT: SSH server port (defaults to 22 if not specified).
+    - SSH_USER: SSH username (e.g., ec2-user).
+    Authentication: Either one of the following is required:
+        - PEM_PATH: Path to the PEM file for key-based SSH authentication.
+        - SSH_PASSWORD: SSH password (optional if PEM_PATH is provided).
+
+Predefined SSH Tunnel:
+    - PGHOST_OVERRIDE: Optional; Overrides the host in the fetched secret to point to the active SSH tunnel (e.g., 127.0.0.1).
+    - PGPORT_OVERRIDE: Optional; Overrides the port in the fetched secret to point to the active SSH tunnel (e.g., 7778).
+
+------------------------
+Example .env:
+
+    SECRET_ARN=arn:aws:secretsmanager:us-east-1:123456789012:secret:example-secret-arn
+        
+    AWS_PROFILE=prod-creds
+    REGION_NAME=us-east-1
+    
+    SSH_SERVER=example-ssh-server.com
+    SSH_PORT=22
+    SSH_USER=ec2-user
+    
+    PEM_PATH=/path/to/your/key.pem
+    SSH_PASSWORD=your-ssh-password
+    
+    PGHOST_OVERRIDE=127.0.0.1
+    PGPORT_OVERRIDE=7778
+------------------------
+
+Please ensure these keys are set either as environment variables or in a .env file. 
+If using AWS_PROFILE, confirm the profile is defined in your ~/.aws/credentials file and ~/.aws/config file. 
+If using SSH tunnels, ensure all required credentials are configured.
+"""
 
 class _ConfigurationManager:
     """
@@ -76,14 +122,17 @@ class _ConfigurationManager:
         try:
             self._initialize_env()
         except Exception as e:
-            logger.info(f"No env file found to load, using existing variables. Error: {e}")
+            logger.debug(f"No env file found to load, using existing variables. Error: {e}")
         self._init_from_env()
         self._init_from_kwargs(kwargs)
 
         if self.secret_arn is None:
-            err_string = "Error in loading environment variables, Secret ARN is missing"
-            logger.error(err_string)
-            raise ValueError(err_string)
+            raise InvalidConfigurationException(
+                config_name="Secret ARN",
+                reason="Missing environment variable or configuration.",
+                message=MISSING_KEYS_MESSAGE
+            )
+
 
         # Log configuration after initialization
         logger.debug(self._log_safe_config())

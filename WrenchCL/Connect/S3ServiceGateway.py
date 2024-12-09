@@ -45,6 +45,7 @@ class S3ServiceGateway:
         """
         client_manager = AwsClientHub()
         self.s3_client = client_manager.get_s3_client(config=config)
+        self.test_mode = False
         logger.debug("S3ServiceGateway initialized with S3 client.")
 
     @staticmethod
@@ -63,6 +64,10 @@ class S3ServiceGateway:
             logger.debug(f"Correcting file extension from {current_extension} to {correct_extension}")
             object_key = str(Path(object_key).with_suffix(correct_extension))
         return object_key
+
+    def set_test_mode(self, test_mode: bool = False):
+        logger.warning("Test mode activated, s3 will not be modified.")
+        self.test_mode = test_mode
 
     @Retryable()
     def upload_file(self, file: Union[str, Path, bytes, BytesIO, StreamingBody], bucket_name: str, object_key: str,
@@ -87,7 +92,8 @@ class S3ServiceGateway:
                 raise ValueError("The file is empty.")
             logger.debug(f"Uploading file from path: {file_path} to bucket: {bucket_name} as object: {object_key}")
             with open(file_path, 'rb') as f:
-                self.s3_client.upload_fileobj(f, bucket_name, object_key)
+                if not self.test_mode:
+                    self.s3_client.upload_fileobj(f, bucket_name, object_key)
         elif isinstance(file, bytes) or (isinstance(file, str) and not Path(file).is_file()):
             # Handle base64 encoded strings
             try:
@@ -100,13 +106,15 @@ class S3ServiceGateway:
 
             file_obj = BytesIO(file_content)
             logger.debug(f"Uploading bytes object to bucket: {bucket_name} as object: {object_key}")
-            self.s3_client.upload_fileobj(file_obj, bucket_name, object_key)
+            if not self.test_mode:
+                self.s3_client.upload_fileobj(file_obj, bucket_name, object_key)
         elif hasattr(file, 'read') and callable(file.read):
             if file.seek(0, 2) == 0:  # Move to the end of the file and check the position
                 raise ValueError("The file-like object is empty.")
             file.seek(0)  # Move back to the beginning of the file
             logger.debug(f"Uploading file-like object to bucket: {bucket_name} as object: {object_key}")
-            self.s3_client.upload_fileobj(file, bucket_name, object_key)
+            if not self.test_mode:
+                self.s3_client.upload_fileobj(file, bucket_name, object_key)
         else:
             raise ValueError("The file parameter must be a file path, bytes, file-like object, or StreamingBody.")
 
@@ -179,7 +187,8 @@ class S3ServiceGateway:
         :type object_key: str
         """
         logger.debug(f"Deleting object: {object_key} from bucket: {bucket_name}")
-        self.s3_client.delete_object(Bucket=bucket_name, Key=object_key)
+        if not self.test_mode:
+            self.s3_client.delete_object(Bucket=bucket_name, Key=object_key)
         logger.debug(f"Object deleted: {object_key} from bucket: {bucket_name}")
 
     @Retryable()
@@ -197,9 +206,10 @@ class S3ServiceGateway:
         :type dst_object_key: str
         """
         logger.debug(f"Moving object: {src_object_key} from {src_bucket_name} to {dst_bucket_name}/{dst_object_key}")
-        self.s3_client.copy_object(Bucket=dst_bucket_name, Key=dst_object_key,
-                                   CopySource={'Bucket': src_bucket_name, 'Key': src_object_key})
-        self.s3_client.delete_object(Bucket=src_bucket_name, Key=src_object_key)
+        if not self.test_mode:
+            self.s3_client.copy_object(Bucket=dst_bucket_name, Key=dst_object_key,
+                                       CopySource={'Bucket': src_bucket_name, 'Key': src_object_key})
+            self.s3_client.delete_object(Bucket=src_bucket_name, Key=src_object_key)
         logger.debug(f"Object moved: {src_object_key} to {dst_bucket_name}/{dst_object_key}")
 
     @Retryable()
@@ -217,8 +227,9 @@ class S3ServiceGateway:
         :type dst_object_key: str
         """
         logger.debug(f"Copying object: {src_object_key} from {src_bucket_name} to {dst_bucket_name}/{dst_object_key}")
-        self.s3_client.copy_object(Bucket=dst_bucket_name, Key=dst_object_key,
-                                   CopySource={'Bucket': src_bucket_name, 'Key': src_object_key})
+        if not self.test_mode:
+            self.s3_client.copy_object(Bucket=dst_bucket_name, Key=dst_object_key,
+                                       CopySource={'Bucket': src_bucket_name, 'Key': src_object_key})
         logger.debug(f"Object copied: {src_object_key} to {dst_bucket_name}/{dst_object_key}")
 
     @Retryable()
@@ -240,6 +251,9 @@ class S3ServiceGateway:
             return True
         except ClientError as e:
             if e.response['Error']['Code'] == "404":
+                if self.test_mode:
+                    logger.debug("Mocking object existence in test mode")
+                    return True
                 logger.debug(f"Object does not exist: {object_key} in bucket: {bucket_name}")
                 return False
             else:
@@ -340,7 +354,8 @@ class S3ServiceGateway:
         warnings.warn(
             "The 'upload_fileobj' method is deprecated and will be removed in a future release. Use 'upload_file' instead.",
             DeprecationWarning)
-        return self.upload_file(file=file_path, bucket_name=bucket_name, object_key=object_key)
+        if not self.test_mode:
+            return self.upload_file(file=file_path, bucket_name=bucket_name, object_key=object_key)
 
     def upload_object(self, obj: Union[str, bytes, IO[bytes], StreamingBody], bucket_name: str, object_key: str):
         """
@@ -359,7 +374,8 @@ class S3ServiceGateway:
         warnings.warn(
             "The 'upload_object' method is deprecated and will be removed in a future release. Use 'upload_file' instead.",
             DeprecationWarning)
-        return self.upload_file(file=obj, bucket_name=bucket_name, object_key=object_key)
+        if not self.test_mode:
+            return self.upload_file(file=obj, bucket_name=bucket_name, object_key=object_key)
 
     def rename_object(self, bucket_name: str, src_object_key: str, dst_object_key: str):
         """
@@ -378,5 +394,6 @@ class S3ServiceGateway:
         warnings.warn(
             "The 'rename_object' method is deprecated and will be removed in a future release. Use 'move_object' instead.",
             DeprecationWarning)
-        return self.move_object(src_bucket_name=bucket_name, src_object_key=src_object_key, dst_bucket_name=bucket_name,
-                                dst_object_key=dst_object_key)
+        if not self.test_mode:
+            return self.move_object(src_bucket_name=bucket_name, src_object_key=src_object_key, dst_bucket_name=bucket_name,
+                                    dst_object_key=dst_object_key)

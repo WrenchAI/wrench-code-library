@@ -21,6 +21,8 @@ import boto3
 import psycopg2
 from botocore.config import Config
 
+from ..Exceptions import IncompleteInitializationException
+from ..Exceptions import InvalidConfigurationException
 from ..Decorators.SingletonClass import SingletonClass
 from ..Tools import logger
 from .._Internal._ConfigurationManager import _ConfigurationManager
@@ -28,9 +30,25 @@ from .._Internal._SshTunnelManager import _SshTunnelManager
 
 from ..Tools.Coalesce import coalesce
 from mypy_boto3_s3.client import S3Client
-from mypy_boto3_rds.client import RDSClient
+from mypy_boto3_rds.client import RDSClient, Exceptions
 from mypy_boto3_secretsmanager.client import SecretsManagerClient
 from mypy_boto3_lambda.client import LambdaClient
+
+from functools import wraps
+
+def require_initialized(method):
+    """
+    A decorator to ensure that the instance is initialized before executing the method.
+    """
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if not getattr(self, '_initialized', False):
+            raise IncompleteInitializationException(
+                f"{self.__class__.__name__} is not fully initialized. "
+                "Please ensure initialization is complete before calling this method."
+            )
+        return method(self, *args, **kwargs)
+    return wrapper
 
 
 @SingletonClass
@@ -77,15 +95,46 @@ class AwsClientHub:
         self.lambda_client = None
         self.config: Union[None, _ConfigurationManager] = None
         self.aws_session_client = None
+        self.env_path = env_path
+        self.kwargs = kwargs
         self.db_client = None
         self.s3_client = None
         self.secret_client = None
         self.secret_string = None
         self.need_ssh_tunnel = False
         self._kwargs = kwargs
-        self.reload_config(env_path=env_path, **kwargs)
-        self.get_secret()
-        self._initialized = True
+        self._initialized = False
+        self._recursive_depth = 0
+
+    def __getattribute__(self, name):
+        # Avoid recursive initialization logic
+        if name == "_recursive_depth" or name == "_initialized" or name == '_kwargs':
+            return object.__getattribute__(self, name)
+
+        # Check initialization state
+        if not object.__getattribute__(self, "_initialized") and object.__getattribute__(self, "_recursive_depth") == 0:
+            object.__setattr__(self, "_recursive_depth", 1)
+            try:
+                self._initialize()
+            finally:
+                object.__setattr__(self, "_recursive_depth", 0)
+
+        # Proceed with regular attribute access
+        return object.__getattribute__(self, name)
+
+    def _initialize(self):
+        """
+        Ensures the instance is initialized, attempting to initialize if necessary.
+        """
+        if not self._initialized:
+            try:
+                self.reload_config(env_path=self.env_path, **self.kwargs)
+                self._initialized = True
+            except InvalidConfigurationException as e:
+                logger.debug(
+                    f"AWS Client Hub initialization deferred, awaiting completion of environment initialization. Details: {str(e)}."
+                )
+
 
     def reload_config(self, env_path=None, **kwargs):
         """
@@ -96,6 +145,7 @@ class AwsClientHub:
         :param kwargs: Additional keyword arguments to pass to the configuration manager.
         """
         self.config = _ConfigurationManager(env_path=env_path, **kwargs)
+        self._get_config_secret()
 
     def get_config(self):
         """
@@ -111,6 +161,8 @@ class AwsClientHub:
             self.reload_config(**self._kwargs)
         return self.config
 
+
+    @require_initialized
     def get_db_uri(self) -> str:
         """
         Constructs and returns the database URI from the secret configuration.
@@ -128,6 +180,7 @@ class AwsClientHub:
         logger.debug(f"Constructed DB URI with endpoint: {RDS_ENDPOINT}, port: {RDS_PORT}, user: {RDS_USERNAME}")
         return RDS_URI
 
+    @require_initialized
     def get_db_client(self) -> RDSClient:
         """
         Retrieves and returns the database client instance, initializing it if not already done.
@@ -142,6 +195,7 @@ class AwsClientHub:
             self._init_rds_client()
         return self.db_client
 
+    @require_initialized
     def get_s3_client(self, config: Optional[Config] = None, force_refresh: bool = False) -> S3Client:
         """
         Retrieves and returns the S3 client instance, initializing it if not already done.
@@ -161,6 +215,7 @@ class AwsClientHub:
             self._init_s3_client(config)
         return self.s3_client
 
+    @require_initialized
     def get_secret_client(self):
         """
         Retrieves and returns an AWS Secretmanager service client instance, initializing it if not already done.
@@ -172,6 +227,7 @@ class AwsClientHub:
             self.secret_client = self._init_other_client(aws_service='secretsmanager')
         return self.secret_client
 
+    @require_initialized
     def get_lambda_client(self):
         """
         Retrieves and returns an AWS Lambda service client instance, initializing it if not already done.
@@ -183,6 +239,7 @@ class AwsClientHub:
             self.lambda_client = self._init_other_client(aws_service='lambda')
         return self.lambda_client
 
+    @require_initialized
     def get_service_client(self, aws_service):
         """
         Retrieves and returns an AWS service client instance, initializing it if not already done.
@@ -194,6 +251,7 @@ class AwsClientHub:
         """
         return self._init_other_client(aws_service=aws_service)
 
+    @require_initialized
     def _init_rds_client(self):
         """
         Initializes the RDS client with the necessary configuration derived from the AWS secrets manager.
@@ -237,6 +295,7 @@ class AwsClientHub:
             logger.error(f"An exception occurred when initializing connection to DB: {e}")
             raise e
 
+    @require_initialized
     def _rds_handle_configuration(self, config):
         """
         Sets up a psycopg2 Connection using a specified config.
@@ -265,6 +324,7 @@ class AwsClientHub:
 
         return db_client
 
+    @require_initialized
     def _init_s3_client(self, config=None):
         """
         Initializes the S3 client, setting it up with the correct region configuration.
@@ -279,6 +339,7 @@ class AwsClientHub:
             logger.error(f"An exception occurred when initializing connection to S3: {e}")
             raise e
 
+    @require_initialized
     def _init_other_client(self, aws_service):
         """
         Initializes an AWS service client, setting it up with the correct region configuration.
@@ -297,7 +358,7 @@ class AwsClientHub:
             logger.error(f"An exception occurred when initializing connection to {aws_service}: {e}")
             raise e
 
-    def get_secret(self, secret_id=None) -> Optional[dict]:
+    def _get_config_secret(self, secret_id=None) -> Optional[dict]:
         """
         Fetches and decodes the secret configuration from AWS Secrets Manager, setting up necessary client
         configuration and determining if SSH tunneling is required.
@@ -317,7 +378,10 @@ class AwsClientHub:
             self.aws_session_client = boto3.session.Session(profile_name=self.config.aws_profile)
             client_object = self.aws_session_client.client('secretsmanager', region_name=self.config.region_name)
             secret_data = client_object.get_secret_value(SecretId=sec_id)['SecretString']
-            self.secret_string = json.loads(secret_data)
+            try:
+                self.secret_string = json.loads(secret_data)
+            except json.JSONDecodeError:
+                self.secret_string = secret_data
 
             if self.secret_string is None:
                 raise ValueError(f"Invalid secret string found {self.secret_string}")
@@ -330,6 +394,37 @@ class AwsClientHub:
         except Exception as e:
             logger.error(f"An exception occurred when getting credentials from AWS: {e}")
             raise e
+
+    @require_initialized
+    def get_secret(self, secret_id=None) -> Optional[dict] | Optional[str]:
+        """
+        Fetches and decodes the secret configuration from AWS Secrets Manager, setting up necessary client
+        configuration and determining if SSH tunneling is required.
+
+        :param secret_id: Optional; The ID of the secret to fetch. If not provided, uses the default secret ARN from the configuration.
+        :type secret_id: str, optional
+
+        :raises Exception: If there is an error fetching or interpreting the secret.
+        :raises ValueError: If the secret string is invalid.
+
+        :returns: The secret configuration as a dictionary if `secret_id` is provided.
+        :rtype: dict, optional
+        """
+        try:
+            if not self.secret_client:
+                self.secret_client = self.aws_session_client.client('secretsmanager', region_name=self.config.region_name)
+            secret_data = self.secret_client.get_secret_value(SecretId=secret_id)
+            try:
+                secret_data = json.loads(secret_data)
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+            return secret_data
+
+        except Exception as e:
+            logger.error(f"An exception occurred when getting Secret from AWS: {e}")
+            raise e
+
 
     def _determine_need_for_tunnel(self):
         """
