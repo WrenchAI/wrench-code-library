@@ -124,19 +124,38 @@
 <a class="viewcode-back" href="../../../modules/WrenchCL.DataFlow.html#WrenchCL.DataFlow.handle_lambda_response.handle_lambda_response">[docs]</a>
 <span class="k">def</span> <span class="nf">handle_lambda_response</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">response_body</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">entity_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Handles the Lambda function response generation and logging based on the provided status code and message.</span>
+<span class="sd">    Handles Lambda function responses, providing detailed custom error logging while</span>
+<span class="sd">    ensuring valid HTTP status codes in API responses.</span>
 
-<span class="sd">    :param int code: The HTTP status code to be included in the response.</span>
-<span class="sd">    :param str message: The message to be included in the response body.</span>
-<span class="sd">    :param dict params: A dictionary containing parameters required for further processing.</span>
-<span class="sd">    :param dict response_body: The json response body (optional).</span>
+<span class="sd">    Custom Error Code Mapping (Logged vs. API Response Codes):</span>
+<span class="sd">        - Logged Codes (4xx, 5xx):</span>
+<span class="sd">            - 400: Validation Error (Bad request, malformed inputs).</span>
+<span class="sd">            - 401: Unauthorized (Invalid credentials, session expired).</span>
+<span class="sd">            - 403: Forbidden (Permission denied, restricted access).</span>
+<span class="sd">            - 404: Resource Not Found.</span>
+<span class="sd">            - 409: Conflict (Resource locks, version conflicts).</span>
+<span class="sd">            - 429: Rate Limit Exceeded.</span>
+<span class="sd">            - 500: General Server Error (Unhandled exceptions, internal issues).</span>
+<span class="sd">            - 502: Dependency Error (External service failures).</span>
+<span class="sd">            - 503: Service Unavailable (System overload, downtime).</span>
+<span class="sd">            - 504: Gateway Timeout (Function timeout, resource unavailability).</span>
+<span class="sd">            - 550: Generic Custom Error (Unspecified issues for tracking purposes).</span>
+<span class="sd">            - 551: Data Validation Error (Invalid inputs or constraints).</span>
+<span class="sd">            - 552: Resource Lock or Conflict.</span>
+<span class="sd">            - 553: Model or AI-related issues.</span>
+<span class="sd">            - 554: API Gateway or Lambda-specific errors.</span>
+<span class="sd">        - Returned API Codes:</span>
+<span class="sd">            - 4xx (Client Errors): Mapped based on the custom code (400, 401, 403, etc.).</span>
+<span class="sd">            - 5xx (Server Errors): Generalized to standard HTTP codes (500, 502, etc.).</span>
+
+<span class="sd">    :param int code: Internal custom error code for logging purposes.</span>
+<span class="sd">    :param str message: A descriptive message about the status or error.</span>
+<span class="sd">    :param dict params: Parameters required for further processing.</span>
+<span class="sd">    :param dict response_body: Custom JSON response body (optional).</span>
 <span class="sd">    :param str client_id: The client ID (optional).</span>
 <span class="sd">    :param str entity_id: The entity ID (optional).</span>
 
-<span class="sd">    :raises GuardedResponseTrigger: Custom exception to signal early exit from the Lambda function. If raised and not handled</span>
-<span class="sd">        at the Lambda handler level, this exception will cause an immediate return with the generated response. If caught</span>
-<span class="sd">        within nested calls, ensure to re-raise it as follows:</span>
-<span class="sd">        ``except GuardedResponseTrigger as e: raise e``</span>
+<span class="sd">    :raises GuardedResponseTrigger: Custom exception to signal early exit from the Lambda function.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">code</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
     <span class="n">expected_types</span> <span class="o">=</span> <span class="p">{</span>
@@ -163,73 +182,46 @@
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to invoke dataflow metrics with error </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
+    <span class="c1"># Consolidated Custom Error Messages</span>
     <span class="n">custom_error_messages</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="mi">700</span><span class="p">:</span> <span class="s2">&quot;Generic Custom Error: A fallback error for unspecified issues.&quot;</span><span class="p">,</span>
-        <span class="mi">701</span><span class="p">:</span> <span class="s2">&quot;Invalid Request Format: The request body does not match the expected schema.&quot;</span><span class="p">,</span>
-        <span class="mi">702</span><span class="p">:</span> <span class="s2">&quot;Authentication Failed: Credentials provided are invalid or expired.&quot;</span><span class="p">,</span>
-        <span class="mi">703</span><span class="p">:</span> <span class="s2">&quot;Authorization Denied: The authenticated user does not have permission to access the requested resource.&quot;</span><span class="p">,</span>
-        <span class="mi">704</span><span class="p">:</span> <span class="s2">&quot;Resource Not Found: The requested resource does not exist or is not available.&quot;</span><span class="p">,</span>
-        <span class="mi">705</span><span class="p">:</span> <span class="s2">&quot;Resource Locked: The resource is currently locked or in use and cannot be modified.&quot;</span><span class="p">,</span>
-        <span class="mi">706</span><span class="p">:</span> <span class="s2">&quot;Rate Limit Exceeded: The request has exceeded the rate limit. Try again later.&quot;</span><span class="p">,</span>
-        <span class="mi">707</span><span class="p">:</span> <span class="s2">&quot;Data Validation Failed: The provided data does not meet validation criteria.&quot;</span><span class="p">,</span>
-        <span class="mi">708</span><span class="p">:</span> <span class="s2">&quot;Dependency Error: A failure occurred in an external service or dependency.&quot;</span><span class="p">,</span>
-        <span class="mi">709</span><span class="p">:</span> <span class="s2">&quot;Feature Deprecated: The requested feature is no longer supported.&quot;</span><span class="p">,</span>
-        <span class="mi">710</span><span class="p">:</span> <span class="s2">&quot;Uncaught Expected Exit Path: The Lambda has been exited in an expected manner without successfully ending.&quot;</span><span class="p">,</span>
-        <span class="mi">730</span><span class="p">:</span> <span class="s2">&quot;Model Training Error: An error occurred during the training process of a machine learning model.&quot;</span><span class="p">,</span>
-        <span class="mi">731</span><span class="p">:</span> <span class="s2">&quot;Model Not Found: The specified machine learning model could not be found.&quot;</span><span class="p">,</span>
-        <span class="mi">732</span><span class="p">:</span> <span class="s2">&quot;Prediction Error: An Internal error occurred while making a prediction with the model.&quot;</span><span class="p">,</span>
-        <span class="mi">733</span><span class="p">:</span> <span class="s2">&quot;Model Update Failure: Failed to update the machine learning model.&quot;</span><span class="p">,</span>
-        <span class="mi">734</span><span class="p">:</span> <span class="s2">&quot;Invalid Model Input: The input data for the model is invalid or malformed.&quot;</span><span class="p">,</span>
-        <span class="mi">735</span><span class="p">:</span> <span class="s2">&quot;Model Deployment Error: An error occurred while deploying the machine learning model.&quot;</span><span class="p">,</span>
-        <span class="mi">736</span><span class="p">:</span> <span class="s2">&quot;Model Version Conflict: There is a version conflict with the machine learning model.&quot;</span><span class="p">,</span>
-        <span class="mi">737</span><span class="p">:</span> <span class="s2">&quot;Prediction Error: Invalid prediction provided by model.&quot;</span><span class="p">,</span>
-        <span class="mi">738</span><span class="p">:</span> <span class="s2">&quot;Data Value Error: Returned score does not satisfy constraints or expected range.&quot;</span><span class="p">,</span>
-        <span class="mi">740</span><span class="p">:</span> <span class="s2">&quot;Lambda Invocation Error: An error occurred while invoking an AWS Lambda function.&quot;</span><span class="p">,</span>
-        <span class="mi">741</span><span class="p">:</span> <span class="s2">&quot;Lambda Timeout: The AWS Lambda function timed out before completion.&quot;</span><span class="p">,</span>
-        <span class="mi">742</span><span class="p">:</span> <span class="s2">&quot;Insufficient Permissions: The AWS Lambda function does not have the necessary permissions.&quot;</span><span class="p">,</span>
-        <span class="mi">743</span><span class="p">:</span> <span class="s2">&quot;Cold Start Delay: Delay due to AWS Lambda cold start.&quot;</span><span class="p">,</span>
-        <span class="mi">744</span><span class="p">:</span> <span class="s2">&quot;API Gateway Integration Error: An error occurred in the integration between Lambda and API Gateway.&quot;</span><span class="p">,</span>
-        <span class="mi">745</span><span class="p">:</span> <span class="s2">&quot;Lambda Resource Limit Exceeded: The AWS Lambda function exceeded its allocated resources.&quot;</span><span class="p">,</span>
-        <span class="mi">750</span><span class="p">:</span> <span class="s2">&quot;Data Retrieval Failure: Failed to retrieve data from the database or storage.&quot;</span><span class="p">,</span>
-        <span class="mi">751</span><span class="p">:</span> <span class="s2">&quot;Data Save Failure: Failed to save data to the database or storage.&quot;</span><span class="p">,</span>
-        <span class="mi">752</span><span class="p">:</span> <span class="s2">&quot;Data Integrity Error: The data integrity check failed.&quot;</span><span class="p">,</span>
-        <span class="mi">753</span><span class="p">:</span> <span class="s2">&quot;Data Serialization Error: An error occurred during data serialization or deserialization.&quot;</span><span class="p">,</span>
-        <span class="mi">754</span><span class="p">:</span> <span class="s2">&quot;Data Version Mismatch: The version of the data does not match the expected version.&quot;</span><span class="p">,</span>
-        <span class="mi">755</span><span class="p">:</span> <span class="s2">&quot;Data Expiry Error: Attempted to access data that has expired or is no longer valid.&quot;</span><span class="p">,</span>
-        <span class="mi">756</span><span class="p">:</span> <span class="s2">&quot;Data Encryption Error: An error occurred during data encryption or decryption.&quot;</span><span class="p">,</span>
-        <span class="mi">757</span><span class="p">:</span> <span class="s2">&quot;Data Typing Error: An error occurred during data type coercion.&quot;</span><span class="p">,</span>
-        <span class="mi">758</span><span class="p">:</span> <span class="s2">&quot;Data Retrieval Rejection: The requested data already exists.&quot;</span><span class="p">,</span>
-        <span class="mi">800</span><span class="p">:</span> <span class="s2">&quot;Payment Required: The request cannot be processed without payment.&quot;</span><span class="p">,</span>
-        <span class="mi">801</span><span class="p">:</span> <span class="s2">&quot;Quota Exceeded: The usage quota for the service or resource has been exceeded.&quot;</span><span class="p">,</span>
-        <span class="mi">802</span><span class="p">:</span> <span class="s2">&quot;Duplicate Request: The same request has been received more than once.&quot;</span><span class="p">,</span>
-        <span class="mi">803</span><span class="p">:</span> <span class="s2">&quot;Resource Conflict: The request could not be completed due to a conflict with the current state of the resource.&quot;</span><span class="p">,</span>
-        <span class="mi">804</span><span class="p">:</span> <span class="s2">&quot;Precondition Failed: One or more conditions in the request header fields evaluated to false.&quot;</span><span class="p">,</span>
-        <span class="mi">805</span><span class="p">:</span> <span class="s2">&quot;Validation Timeout: The validation process for the request has timed out.&quot;</span><span class="p">,</span>
-        <span class="mi">806</span><span class="p">:</span> <span class="s2">&quot;Operation Not Allowed: The requested operation is not allowed.&quot;</span><span class="p">,</span>
-        <span class="mi">807</span><span class="p">:</span> <span class="s2">&quot;Data Mismatch Error: The provided data does not match the expected data.&quot;</span><span class="p">,</span>
-        <span class="mi">808</span><span class="p">:</span> <span class="s2">&quot;Partial Success: The operation was partially successful.&quot;</span><span class="p">,</span>
-        <span class="mi">809</span><span class="p">:</span> <span class="s2">&quot;Dependent Resource Unavailable: A resource that the request depends on is not available.&quot;</span>
+        <span class="mi">400</span><span class="p">:</span> <span class="s2">&quot;Validation Error: Malformed or invalid request.&quot;</span><span class="p">,</span>
+        <span class="mi">401</span><span class="p">:</span> <span class="s2">&quot;Unauthorized: Invalid credentials or session expired.&quot;</span><span class="p">,</span>
+        <span class="mi">403</span><span class="p">:</span> <span class="s2">&quot;Forbidden: Access denied or restricted.&quot;</span><span class="p">,</span>
+        <span class="mi">404</span><span class="p">:</span> <span class="s2">&quot;Resource Not Found: The requested resource does not exist.&quot;</span><span class="p">,</span>
+        <span class="mi">409</span><span class="p">:</span> <span class="s2">&quot;Conflict: Resource is locked or has version conflicts.&quot;</span><span class="p">,</span>
+        <span class="mi">429</span><span class="p">:</span> <span class="s2">&quot;Rate Limit Exceeded: Too many requests.&quot;</span><span class="p">,</span>
+        <span class="mi">500</span><span class="p">:</span> <span class="s2">&quot;Internal Server Error: An unexpected server-side issue occurred.&quot;</span><span class="p">,</span>
+        <span class="mi">502</span><span class="p">:</span> <span class="s2">&quot;Dependency Error: External service failure.&quot;</span><span class="p">,</span>
+        <span class="mi">503</span><span class="p">:</span> <span class="s2">&quot;Service Unavailable: System overload or downtime.&quot;</span><span class="p">,</span>
+        <span class="mi">504</span><span class="p">:</span> <span class="s2">&quot;Gateway Timeout: Function timed out before completion.&quot;</span><span class="p">,</span>
+        <span class="mi">550</span><span class="p">:</span> <span class="s2">&quot;Generic Custom Error: Unspecified issue for tracking purposes.&quot;</span><span class="p">,</span>
+        <span class="mi">551</span><span class="p">:</span> <span class="s2">&quot;Data Validation Error: Inputs failed validation.&quot;</span><span class="p">,</span>
+        <span class="mi">552</span><span class="p">:</span> <span class="s2">&quot;Resource Conflict: Resource is locked or conflicting.&quot;</span><span class="p">,</span>
+        <span class="mi">553</span><span class="p">:</span> <span class="s2">&quot;Model Error: AI/ML operation failed.&quot;</span><span class="p">,</span>
+        <span class="mi">554</span><span class="p">:</span> <span class="s2">&quot;Lambda/API Gateway Error: Integration or execution issue.&quot;</span><span class="p">,</span>
     <span class="p">}</span>
 
-    <span class="k">if</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">custom_error_messages</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;status code = </span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">custom_error_messages</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="si">}</span><span class="s2"> | [Client ID: </span><span class="si">{</span><span class="n">client_id</span><span class="si">}</span><span class="s2">, Entity ID: </span><span class="si">{</span><span class="n">entity_id</span><span class="si">}</span><span class="s2">] | Status message: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
-    <span class="k">elif</span> <span class="mi">400</span> <span class="o">&lt;=</span> <span class="n">code</span> <span class="o">&lt;</span> <span class="mi">500</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;status code = </span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="s2"> | Un-Handled Exception Status Code | [Client ID: </span><span class="si">{</span><span class="n">client_id</span><span class="si">}</span><span class="s2">, Entity ID: </span><span class="si">{</span><span class="n">entity_id</span><span class="si">}</span><span class="s2">] | Status message: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">code</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;status code = </span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="s2"> | Unexpected Status Code | [Client ID: </span><span class="si">{</span><span class="n">client_id</span><span class="si">}</span><span class="s2">, Entity ID: </span><span class="si">{</span><span class="n">entity_id</span><span class="si">}</span><span class="s2">] | Status message: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;status code = </span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="s2"> | Success Status | [Client ID: </span><span class="si">{</span><span class="n">client_id</span><span class="si">}</span><span class="s2">, Entity ID: </span><span class="si">{</span><span class="n">entity_id</span><span class="si">}</span><span class="s2">] | Status message: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
+    <span class="c1"># Map custom codes to standard HTTP codes for API responses</span>
+    <span class="k">if</span> <span class="n">code</span> <span class="ow">in</span> <span class="p">{</span><span class="mi">550</span><span class="p">,</span> <span class="mi">551</span><span class="p">,</span> <span class="mi">552</span><span class="p">,</span> <span class="mi">553</span><span class="p">,</span> <span class="mi">554</span><span class="p">}:</span>
+        <span class="n">api_code</span> <span class="o">=</span> <span class="mi">500</span>  <span class="c1"># Map custom server-side issues to HTTP 500</span>
+    <span class="k">elif</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">custom_error_messages</span><span class="p">:</span>
+        <span class="n">api_code</span> <span class="o">=</span> <span class="n">code</span>  <span class="c1"># Use the provided code for 4xx and common 5xx errors</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">api_code</span> <span class="o">=</span> <span class="mi">500</span>  <span class="c1"># Default to HTTP 500 for undefined server errors</span>
 
+    <span class="c1"># Log the error with the internal custom code</span>
+    <span class="k">if</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">custom_error_messages</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Custom Code = </span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">custom_error_messages</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="si">}</span><span class="s2"> | [Client ID: </span><span class="si">{</span><span class="n">client_id</span><span class="si">}</span><span class="s2">, Entity ID: </span><span class="si">{</span><span class="n">entity_id</span><span class="si">}</span><span class="s2">] | Status Message: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">,</span><span class="n">stack_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Custom Code = </span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="s2"> | Unrecognized Error Code | [Client ID: </span><span class="si">{</span><span class="n">client_id</span><span class="si">}</span><span class="s2">, Entity ID: </span><span class="si">{</span><span class="n">entity_id</span><span class="si">}</span><span class="s2">] | Status Message: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">,</span><span class="n">stack_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Build the response</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">build_return_json</span><span class="p">(</span>
-        <span class="n">code</span><span class="o">=</span><span class="n">code</span><span class="p">,</span>
+        <span class="n">code</span><span class="o">=</span><span class="n">api_code</span><span class="p">,</span>
         <span class="n">response_body</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">Message</span><span class="o">=</span><span class="n">message</span><span class="p">)</span> <span class="k">if</span> <span class="n">response_body</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">response_body</span>
     <span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">context</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Built Lambda Response: </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>

@@ -87,7 +87,7 @@
 <span class="kn">from</span> <span class="nn">turtledemo.nim</span> <span class="kn">import</span> <span class="n">COLOR</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-
+<span class="kn">from</span> <span class="nn">.._Internal._MockPandas</span> <span class="kn">import</span> <span class="n">MockPandas</span>
 <span class="kn">from</span> <span class="nn">..Decorators</span> <span class="kn">import</span> <span class="n">SingletonClass</span>
 
 <span class="k">try</span><span class="p">:</span>
@@ -100,7 +100,12 @@
     <span class="n">Color</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">Style</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">colorama_imported</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;colorama package not found. Colored logging is disabled.&quot;</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;colorama package not found. Colored logging is disabled.&quot;</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">pd</span> <span class="o">=</span> <span class="n">MockPandas</span><span class="p">()</span>
 
 <span class="n">_srcfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normcase</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
 <span class="n">_logging_src</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normcase</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">addLevelName</span><span class="o">.</span><span class="vm">__code__</span><span class="o">.</span><span class="n">co_filename</span><span class="p">)</span>
@@ -392,11 +397,6 @@
                 <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
                     <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
-        <span class="k">try</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-            <span class="n">pd</span> <span class="o">=</span> <span class="kc">None</span>
-
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="n">prefix_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;DataType: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> | Length: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="n">formatted_text</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">serialize</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_custom_serializer</span><span class="p">)</span>
@@ -624,8 +624,6 @@
 
     <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">stack_info</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">compact</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Logs an error message.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">):</span>
-            <span class="n">stack_info</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="n">serialized_args</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_custom_serializer</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]</span>
         <span class="n">text</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">serialized_args</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_log_with_color</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ERROR_lvl</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">Color</span><span class="o">.</span><span class="n">RED</span> <span class="k">if</span> <span class="n">colorama_imported</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stack_info</span><span class="p">,</span> <span class="n">compact</span><span class="p">)</span>
@@ -633,13 +631,6 @@
     <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">object_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">wrap_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
              <span class="n">max_rows</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stack_info</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">truncate_values</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Logs a data message with optional formatting.&quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-            <span class="k">class</span> <span class="nc">pd</span><span class="p">:</span>
-                <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">pd</span> <span class="o">=</span> <span class="n">pd</span><span class="p">()</span>
         <span class="n">option_bu</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">options</span>
         <span class="n">object_name</span> <span class="o">=</span> <span class="n">object_name</span> <span class="k">if</span> <span class="n">object_name</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;Type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">formatted_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">object_name</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">wrap_length</span><span class="p">,</span> <span class="n">max_rows</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">)</span>

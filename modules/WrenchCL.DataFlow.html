@@ -99,23 +99,23 @@
 <span id="wrenchcl-dataflow-build-return-json-module"></span><h2>WrenchCL.DataFlow.build_return_json module<a class="headerlink" href="#module-WrenchCL.DataFlow.build_return_json" title="Link to this heading"></a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="WrenchCL.DataFlow.build_return_json.build_return_json">
-<span class="sig-prename descclassname"><span class="pre">WrenchCL.DataFlow.build_return_json.</span></span><span class="sig-name descname"><span class="pre">build_return_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_body</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/WrenchCL/DataFlow/build_return_json.html#build_return_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#WrenchCL.DataFlow.build_return_json.build_return_json" title="Link to this definition"></a></dt>
-<dd><p>Constructs a JSON response body with the provided status code and message, optionally including a return dictionary.</p>
+<span class="sig-prename descclassname"><span class="pre">WrenchCL.DataFlow.build_return_json.</span></span><span class="sig-name descname"><span class="pre">build_return_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'GET,</span> <span class="pre">OPTIONS,</span> <span class="pre">POST'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/WrenchCL/DataFlow/build_return_json.html#build_return_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#WrenchCL.DataFlow.build_return_json.build_return_json" title="Link to this definition"></a></dt>
+<dd><p>Constructs a JSON response body with default headers and allows additional customization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>code</strong> (<em>int</em>) – The HTTP status code to be included in the response.</p></li>
-<li><p><strong>response_body</strong> (<em>any</em>) – A dictionary containing data to be included in the response body. Defaults to None.</p></li>
+<li><p><strong>code</strong> (<em>int</em>) – The HTTP status code to include in the response.</p></li>
+<li><p><strong>response_body</strong> (<em>any</em>) – The main content of the response, serialized using robust_serializer.</p></li>
+<li><p><strong>allow</strong> (<em>str</em><em>, </em><em>optional</em>) – HTTP methods allowed by the server. Defaults to “GET, OPTIONS, POST”.</p></li>
+<li><p><strong>header_options</strong> (<em>dict</em><em>, </em><em>optional</em>) – Custom headers to override defaults. Defaults to None.</p></li>
+<li><p><strong>**kwargs</strong> – Additional fields to include in the response body.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A dictionary representing the JSON response containing the status code, message, and optionally the return dictionary.</p>
+<dd class="field-even"><p>The full response object with headers, status code, and body.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>dict</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>None</strong> – No explicit exceptions are raised within this function.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -147,23 +147,55 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="WrenchCL.DataFlow.handle_lambda_response.handle_lambda_response">
 <span class="sig-prename descclassname"><span class="pre">WrenchCL.DataFlow.handle_lambda_response.</span></span><span class="sig-name descname"><span class="pre">handle_lambda_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_body</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/WrenchCL/DataFlow/handle_lambda_response.html#handle_lambda_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#WrenchCL.DataFlow.handle_lambda_response.handle_lambda_response" title="Link to this definition"></a></dt>
-<dd><p>Handles the Lambda function response generation and logging based on the provided status code and message.</p>
+<dd><p>Handles Lambda function responses, providing detailed custom error logging while
+ensuring valid HTTP status codes in API responses.</p>
+<dl class="simple">
+<dt>Custom Error Code Mapping (Logged vs. API Response Codes):</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>Logged Codes (4xx, 5xx):</dt><dd><ul>
+<li><p>400: Validation Error (Bad request, malformed inputs).</p></li>
+<li><p>401: Unauthorized (Invalid credentials, session expired).</p></li>
+<li><p>403: Forbidden (Permission denied, restricted access).</p></li>
+<li><p>404: Resource Not Found.</p></li>
+<li><p>409: Conflict (Resource locks, version conflicts).</p></li>
+<li><p>429: Rate Limit Exceeded.</p></li>
+<li><p>500: General Server Error (Unhandled exceptions, internal issues).</p></li>
+<li><p>502: Dependency Error (External service failures).</p></li>
+<li><p>503: Service Unavailable (System overload, downtime).</p></li>
+<li><p>504: Gateway Timeout (Function timeout, resource unavailability).</p></li>
+<li><p>550: Generic Custom Error (Unspecified issues for tracking purposes).</p></li>
+<li><p>551: Data Validation Error (Invalid inputs or constraints).</p></li>
+<li><p>552: Resource Lock or Conflict.</p></li>
+<li><p>553: Model or AI-related issues.</p></li>
+<li><p>554: API Gateway or Lambda-specific errors.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Returned API Codes:</dt><dd><ul>
+<li><p>4xx (Client Errors): Mapped based on the custom code (400, 401, 403, etc.).</p></li>
+<li><p>5xx (Server Errors): Generalized to standard HTTP codes (500, 502, etc.).</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>code</strong> (<em>int</em>) – The HTTP status code to be included in the response.</p></li>
-<li><p><strong>message</strong> (<em>str</em>) – The message to be included in the response body.</p></li>
-<li><p><strong>params</strong> (<em>dict</em>) – A dictionary containing parameters required for further processing.</p></li>
-<li><p><strong>response_body</strong> (<em>dict</em>) – The json response body (optional).</p></li>
+<li><p><strong>code</strong> (<em>int</em>) – Internal custom error code for logging purposes.</p></li>
+<li><p><strong>message</strong> (<em>str</em>) – A descriptive message about the status or error.</p></li>
+<li><p><strong>params</strong> (<em>dict</em>) – Parameters required for further processing.</p></li>
+<li><p><strong>response_body</strong> (<em>dict</em>) – Custom JSON response body (optional).</p></li>
 <li><p><strong>client_id</strong> (<em>str</em>) – The client ID (optional).</p></li>
 <li><p><strong>entity_id</strong> (<em>str</em>) – The entity ID (optional).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#WrenchCL.DataFlow.handle_lambda_response.GuardedResponseTrigger" title="WrenchCL.DataFlow.handle_lambda_response.GuardedResponseTrigger"><strong>GuardedResponseTrigger</strong></a> – Custom exception to signal early exit from the Lambda function. If raised and not handled
-at the Lambda handler level, this exception will cause an immediate return with the generated response. If caught
-within nested calls, ensure to re-raise it as follows:
-<code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">GuardedResponseTrigger</span> <span class="pre">as</span> <span class="pre">e:</span> <span class="pre">raise</span> <span class="pre">e</span></code></p>
+<dd class="field-even"><p><a class="reference internal" href="#WrenchCL.DataFlow.handle_lambda_response.GuardedResponseTrigger" title="WrenchCL.DataFlow.handle_lambda_response.GuardedResponseTrigger"><strong>GuardedResponseTrigger</strong></a> – Custom exception to signal early exit from the Lambda function.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -275,23 +307,23 @@ information about the job execution.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="WrenchCL.DataFlow.build_return_json">
-<span class="sig-prename descclassname"><span class="pre">WrenchCL.DataFlow.</span></span><span class="sig-name descname"><span class="pre">build_return_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_body</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/WrenchCL/DataFlow/build_return_json.html#build_return_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#WrenchCL.DataFlow.build_return_json" title="Link to this definition"></a></dt>
-<dd><p>Constructs a JSON response body with the provided status code and message, optionally including a return dictionary.</p>
+<span class="sig-prename descclassname"><span class="pre">WrenchCL.DataFlow.</span></span><span class="sig-name descname"><span class="pre">build_return_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'GET,</span> <span class="pre">OPTIONS,</span> <span class="pre">POST'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/WrenchCL/DataFlow/build_return_json.html#build_return_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#WrenchCL.DataFlow.build_return_json" title="Link to this definition"></a></dt>
+<dd><p>Constructs a JSON response body with default headers and allows additional customization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>code</strong> (<em>int</em>) – The HTTP status code to be included in the response.</p></li>
-<li><p><strong>response_body</strong> (<em>any</em>) – A dictionary containing data to be included in the response body. Defaults to None.</p></li>
+<li><p><strong>code</strong> (<em>int</em>) – The HTTP status code to include in the response.</p></li>
+<li><p><strong>response_body</strong> (<em>any</em>) – The main content of the response, serialized using robust_serializer.</p></li>
+<li><p><strong>allow</strong> (<em>str</em><em>, </em><em>optional</em>) – HTTP methods allowed by the server. Defaults to “GET, OPTIONS, POST”.</p></li>
+<li><p><strong>header_options</strong> (<em>dict</em><em>, </em><em>optional</em>) – Custom headers to override defaults. Defaults to None.</p></li>
+<li><p><strong>**kwargs</strong> – Additional fields to include in the response body.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A dictionary representing the JSON response containing the status code, message, and optionally the return dictionary.</p>
+<dd class="field-even"><p>The full response object with headers, status code, and body.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>dict</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>None</strong> – No explicit exceptions are raised within this function.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -299,23 +331,55 @@ information about the job execution.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="WrenchCL.DataFlow.handle_lambda_response">
 <span class="sig-prename descclassname"><span class="pre">WrenchCL.DataFlow.</span></span><span class="sig-name descname"><span class="pre">handle_lambda_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_body</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entity_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/WrenchCL/DataFlow/handle_lambda_response.html#handle_lambda_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#WrenchCL.DataFlow.handle_lambda_response" title="Link to this definition"></a></dt>
-<dd><p>Handles the Lambda function response generation and logging based on the provided status code and message.</p>
+<dd><p>Handles Lambda function responses, providing detailed custom error logging while
+ensuring valid HTTP status codes in API responses.</p>
+<dl class="simple">
+<dt>Custom Error Code Mapping (Logged vs. API Response Codes):</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>Logged Codes (4xx, 5xx):</dt><dd><ul>
+<li><p>400: Validation Error (Bad request, malformed inputs).</p></li>
+<li><p>401: Unauthorized (Invalid credentials, session expired).</p></li>
+<li><p>403: Forbidden (Permission denied, restricted access).</p></li>
+<li><p>404: Resource Not Found.</p></li>
+<li><p>409: Conflict (Resource locks, version conflicts).</p></li>
+<li><p>429: Rate Limit Exceeded.</p></li>
+<li><p>500: General Server Error (Unhandled exceptions, internal issues).</p></li>
+<li><p>502: Dependency Error (External service failures).</p></li>
+<li><p>503: Service Unavailable (System overload, downtime).</p></li>
+<li><p>504: Gateway Timeout (Function timeout, resource unavailability).</p></li>
+<li><p>550: Generic Custom Error (Unspecified issues for tracking purposes).</p></li>
+<li><p>551: Data Validation Error (Invalid inputs or constraints).</p></li>
+<li><p>552: Resource Lock or Conflict.</p></li>
+<li><p>553: Model or AI-related issues.</p></li>
+<li><p>554: API Gateway or Lambda-specific errors.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Returned API Codes:</dt><dd><ul>
+<li><p>4xx (Client Errors): Mapped based on the custom code (400, 401, 403, etc.).</p></li>
+<li><p>5xx (Server Errors): Generalized to standard HTTP codes (500, 502, etc.).</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>code</strong> (<em>int</em>) – The HTTP status code to be included in the response.</p></li>
-<li><p><strong>message</strong> (<em>str</em>) – The message to be included in the response body.</p></li>
-<li><p><strong>params</strong> (<em>dict</em>) – A dictionary containing parameters required for further processing.</p></li>
-<li><p><strong>response_body</strong> (<em>dict</em>) – The json response body (optional).</p></li>
+<li><p><strong>code</strong> (<em>int</em>) – Internal custom error code for logging purposes.</p></li>
+<li><p><strong>message</strong> (<em>str</em>) – A descriptive message about the status or error.</p></li>
+<li><p><strong>params</strong> (<em>dict</em>) – Parameters required for further processing.</p></li>
+<li><p><strong>response_body</strong> (<em>dict</em>) – Custom JSON response body (optional).</p></li>
 <li><p><strong>client_id</strong> (<em>str</em>) – The client ID (optional).</p></li>
 <li><p><strong>entity_id</strong> (<em>str</em>) – The entity ID (optional).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="#WrenchCL.DataFlow.GuardedResponseTrigger" title="WrenchCL.DataFlow.GuardedResponseTrigger"><strong>GuardedResponseTrigger</strong></a> – Custom exception to signal early exit from the Lambda function. If raised and not handled
-at the Lambda handler level, this exception will cause an immediate return with the generated response. If caught
-within nested calls, ensure to re-raise it as follows:
-<code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">GuardedResponseTrigger</span> <span class="pre">as</span> <span class="pre">e:</span> <span class="pre">raise</span> <span class="pre">e</span></code></p>
+<dd class="field-even"><p><a class="reference internal" href="#WrenchCL.DataFlow.GuardedResponseTrigger" title="WrenchCL.DataFlow.GuardedResponseTrigger"><strong>GuardedResponseTrigger</strong></a> – Custom exception to signal early exit from the Lambda function.</p>
 </dd>
 </dl>
 </dd></dl>

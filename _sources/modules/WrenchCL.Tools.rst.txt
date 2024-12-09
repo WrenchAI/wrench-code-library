@@ -52,6 +52,14 @@ WrenchCL.Tools.MaybeMonad module
    :undoc-members:
    :show-inheritance:
 
+WrenchCL.Tools.StandardizeNone module
+-------------------------------------
+
+.. automodule:: WrenchCL.Tools.StandardizeNone
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 WrenchCL.Tools.TypeChecker module
 ---------------------------------
 

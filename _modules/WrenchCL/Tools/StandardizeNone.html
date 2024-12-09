@@ -1,0 +1,195 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WrenchCL.Tools.StandardizeNone &mdash; WrenchCL 0.0.1.dev0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=75d19225"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            WrenchCL
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/modules.html">WrenchCL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development.html">Development</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">WrenchCL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">WrenchCL.Tools.StandardizeNone</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for WrenchCL.Tools.StandardizeNone</h1><div class="highlight"><pre>
+<span></span><span class="c1">#  Copyright (c) $YEAR$. Copyright (c) $YEAR$ Wrench.AI., Willem van der Schans, Jeong Kim</span>
+<span class="c1">#</span>
+<span class="c1">#  MIT License</span>
+<span class="c1">#</span>
+<span class="c1">#  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the &quot;Software&quot;), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</span>
+<span class="c1">#</span>
+<span class="c1">#  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</span>
+<span class="c1">#</span>
+<span class="c1">#  THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</span>
+<span class="c1">#</span>
+<span class="c1">#  All works within the Software are owned by their respective creators and are distributed by Wrench.AI.</span>
+<span class="c1">#</span>
+<span class="c1">#  For inquiries, please contact Willem van der Schans through the official Wrench.AI channels or directly via GitHub at [Kydoimos97](https://github.com/Kydoimos97).</span>
+<span class="c1">#</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span> <span class="nn">.._Internal._MockPandas</span> <span class="kn">import</span> <span class="n">MockPandas</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">pd</span> <span class="o">=</span> <span class="n">MockPandas</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="standardize_none">
+<a class="viewcode-back" href="../../../modules/WrenchCL.Tools.html#WrenchCL.Tools.StandardizeNone.standardize_none">[docs]</a>
+<span class="k">def</span> <span class="nf">standardize_none</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">none_like_values</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">evaluate_as_string</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Recursively standardizes mistyped None values to proper None.</span>
+<span class="sd">        --&gt; (&#39;&#39;, &#39; &#39;, &#39;null&#39;, &#39;none&#39;, &#39;nan&#39;, &#39;n/a&#39;, &#39;na&#39;, &#39;undefined&#39;, &#39;missing&#39;, &#39;nil&#39;, &#39;void&#39;, &#39;blank&#39;)</span>
+<span class="sd">    Handles pandas DataFrames and Series if pandas is available.</span>
+
+<span class="sd">    :param data: The input data, which can be a single value, list, dict, pandas DataFrame, or Series.</span>
+<span class="sd">    :param none_like_values: A set of custom placeholders that should be treated as None.</span>
+<span class="sd">                             If not provided, defaults to common None-like placeholders.</span>
+<span class="sd">    :param evaluate_as_string: Whether to attempt str() conversion on non-string values before checking.</span>
+<span class="sd">    :return: The standardized data with all mistyped None values replaced with proper None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Default None-like values</span>
+    <span class="n">default_none_like_values</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;null&#39;</span><span class="p">,</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;nan&#39;</span><span class="p">,</span> <span class="s1">&#39;n/a&#39;</span><span class="p">,</span> <span class="s1">&#39;na&#39;</span><span class="p">,</span> <span class="s1">&#39;undefined&#39;</span><span class="p">,</span> <span class="s1">&#39;missing&#39;</span><span class="p">,</span> <span class="s1">&#39;nil&#39;</span><span class="p">,</span> <span class="s1">&#39;void&#39;</span><span class="p">,</span> <span class="s1">&#39;blank&#39;</span>
+    <span class="p">}</span>
+    <span class="n">none_like_values</span> <span class="o">=</span> <span class="n">none_like_values</span> <span class="ow">or</span> <span class="n">default_none_like_values</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>  <span class="c1"># Handle DataFrame</span>
+        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">applymap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">is_mistyped_none</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">none_like_values</span><span class="p">,</span> <span class="n">evaluate_as_string</span><span class="p">)</span> <span class="k">else</span> <span class="n">standardize_none</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">none_like_values</span><span class="p">,</span> <span class="n">evaluate_as_string</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>  <span class="c1"># Handle Series</span>
+        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">is_mistyped_none</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">none_like_values</span><span class="p">,</span> <span class="n">evaluate_as_string</span><span class="p">)</span> <span class="k">else</span> <span class="n">standardize_none</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">none_like_values</span><span class="p">,</span> <span class="n">evaluate_as_string</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>  <span class="c1"># Handle List</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">standardize_none</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">none_like_values</span><span class="p">,</span> <span class="n">evaluate_as_string</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>  <span class="c1"># Handle Dict</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">standardize_none</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">none_like_values</span><span class="p">,</span> <span class="n">evaluate_as_string</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># Handle single values</span>
+        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">is_mistyped_none</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">none_like_values</span><span class="p">,</span> <span class="n">evaluate_as_string</span><span class="p">)</span> <span class="k">else</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="is_mistyped_none">
+<a class="viewcode-back" href="../../../modules/WrenchCL.Tools.html#WrenchCL.Tools.StandardizeNone.is_mistyped_none">[docs]</a>
+<span class="k">def</span> <span class="nf">is_mistyped_none</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">none_like_values</span><span class="p">:</span> <span class="nb">set</span><span class="p">,</span> <span class="n">evaluate_as_string</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks if a value is a mistyped None placeholder based on a custom set of None-like values.</span>
+
+<span class="sd">    :param value: The value to check.</span>
+<span class="sd">    :param none_like_values: A set of placeholders to treat as None.</span>
+<span class="sd">    :param evaluate_as_string: Whether to attempt str() conversion on non-string values before checking.</span>
+<span class="sd">    :return: True if the value is mistyped None, False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check for None or NaN directly</span>
+    <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>  <span class="c1"># Handles NaN and None</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="c1"># Check for None-like placeholders in strings</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">none_like_values</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="c1"># Evaluate non-string values as strings if enabled</span>
+    <span class="k">if</span> <span class="n">evaluate_as_string</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">string_value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">string_value</span> <span class="ow">in</span> <span class="n">none_like_values</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>  <span class="c1"># Safely ignore conversion errors</span>
+
+    <span class="c1"># Fallback for other types</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">set</span><span class="p">))</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">value</span><span class="p">:</span>  <span class="c1"># Empty containers</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Willem van der Schans.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

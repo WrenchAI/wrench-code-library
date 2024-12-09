@@ -1,0 +1,624 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WrenchCL.Connect.AwsClientHub &mdash; WrenchCL 0.0.1.dev0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=75d19225"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            WrenchCL
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/modules.html">WrenchCL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development.html">Development</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">WrenchCL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">WrenchCL.Connect.AwsClientHub</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for WrenchCL.Connect.AwsClientHub</h1><div class="highlight"><pre>
+<span></span><span class="c1">#  Copyright (c) $YEAR$. Copyright (c) $YEAR$ Wrench.AI., Willem van der Schans, Jeong Kim</span>
+<span class="c1">#</span>
+<span class="c1">#  MIT License</span>
+<span class="c1">#</span>
+<span class="c1">#  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the &quot;Software&quot;), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</span>
+<span class="c1">#</span>
+<span class="c1">#  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</span>
+<span class="c1">#</span>
+<span class="c1">#  THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</span>
+<span class="c1">#</span>
+<span class="c1">#  All works within the Software are owned by their respective creators and are distributed by Wrench.AI.</span>
+<span class="c1">#</span>
+<span class="c1">#  For inquiries, please contact Willem van der Schans through the official Wrench.AI channels or directly via GitHub at [Kydoimos97](https://github.com/Kydoimos97).</span>
+<span class="c1">#</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">boto3</span>
+<span class="kn">import</span> <span class="nn">psycopg2</span>
+<span class="kn">from</span> <span class="nn">botocore.config</span> <span class="kn">import</span> <span class="n">Config</span>
+
+<span class="kn">from</span> <span class="nn">..Exceptions</span> <span class="kn">import</span> <span class="n">IncompleteInitializationException</span>
+<span class="kn">from</span> <span class="nn">..Exceptions</span> <span class="kn">import</span> <span class="n">InvalidConfigurationException</span>
+<span class="kn">from</span> <span class="nn">..Decorators.SingletonClass</span> <span class="kn">import</span> <span class="n">SingletonClass</span>
+<span class="kn">from</span> <span class="nn">..Tools</span> <span class="kn">import</span> <span class="n">logger</span>
+<span class="kn">from</span> <span class="nn">.._Internal._ConfigurationManager</span> <span class="kn">import</span> <span class="n">_ConfigurationManager</span>
+<span class="kn">from</span> <span class="nn">.._Internal._SshTunnelManager</span> <span class="kn">import</span> <span class="n">_SshTunnelManager</span>
+
+<span class="kn">from</span> <span class="nn">..Tools.Coalesce</span> <span class="kn">import</span> <span class="n">coalesce</span>
+<span class="kn">from</span> <span class="nn">mypy_boto3_s3.client</span> <span class="kn">import</span> <span class="n">S3Client</span>
+<span class="kn">from</span> <span class="nn">mypy_boto3_rds.client</span> <span class="kn">import</span> <span class="n">RDSClient</span><span class="p">,</span> <span class="n">Exceptions</span>
+<span class="kn">from</span> <span class="nn">mypy_boto3_secretsmanager.client</span> <span class="kn">import</span> <span class="n">SecretsManagerClient</span>
+<span class="kn">from</span> <span class="nn">mypy_boto3_lambda.client</span> <span class="kn">import</span> <span class="n">LambdaClient</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
+
+<div class="viewcode-block" id="require_initialized">
+<a class="viewcode-back" href="../../../modules/WrenchCL.Connect.html#WrenchCL.Connect.AwsClientHub.require_initialized">[docs]</a>
+<span class="k">def</span> <span class="nf">require_initialized</span><span class="p">(</span><span class="n">method</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A decorator to ensure that the instance is initialized before executing the method.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@wraps</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_initialized&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">IncompleteInitializationException</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is not fully initialized. &quot;</span>
+                <span class="s2">&quot;Please ensure initialization is complete before calling this method.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">wrapper</span></div>
+
+
+
+<span class="nd">@SingletonClass</span>
+<span class="k">class</span> <span class="nc">AwsClientHub</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Manages AWS client services including RDS and S3. Ensures that client instances are created as singletons to</span>
+<span class="sd">    maintain efficient use of resources and consistency across operations.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        config (_ConfigurationManager): Instance of the configuration manager.</span>
+<span class="sd">        aws_session_client (boto3.session.Session): The AWS session client for accessing various AWS services.</span>
+<span class="sd">        db_client (object): Client for interacting with AWS RDS databases.</span>
+<span class="sd">        s3_client (object): Client for interacting with AWS S3 storage.</span>
+<span class="sd">        need_ssh_tunnel (bool): Indicates if an SSH tunnel is required for database connections, based on secret data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the AwsClientHub by setting up the AWS session and fetching necessary secrets for configuring</span>
+<span class="sd">        other AWS services. Supports additional configuration via keyword arguments or environment variable overrides.</span>
+
+<span class="sd">        :param env_path: The path to the environment configuration file.</span>
+<span class="sd">        :type env_path: str, optional</span>
+<span class="sd">        :param kwargs: Additional keyword arguments to pass to the configuration manager.</span>
+<span class="sd">                       These can override default configurations such as:</span>
+<span class="sd">            - AWS_PROFILE (str): AWS profile name for creating sessions.</span>
+<span class="sd">            - REGION_NAME (str): AWS region name.</span>
+<span class="sd">            - SECRET_ARN (str): ARN of the AWS Secrets Manager secret.</span>
+<span class="sd">            - OPENAI_API_KEY (str): API key for OpenAI.</span>
+<span class="sd">            - SSH_SERVER (str): SSH server address.</span>
+<span class="sd">            - SSH_PORT (int): SSH server port.</span>
+<span class="sd">            - SSH_USER (str): SSH username.</span>
+<span class="sd">            - SSH_PASSWORD (str): SSH user password.</span>
+<span class="sd">            - PEM_PATH (str): Path to the PEM file for SSH authentication.</span>
+<span class="sd">            - DB_BATCH_OVERRIDE (int): Batch size for database operations.</span>
+<span class="sd">            - AWS_DEPLOYMENT (bool): Indicates if the deployment is on AWS, affecting SSH tunnel configuration.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            The following environment variables can override the default configuration:</span>
+<span class="sd">            - `PGHOST_OVERRIDE`: Overrides the RDS host specified in the secret. Used to access existing Tunnels.</span>
+<span class="sd">            - `PGPORT_OVERRIDE`: Overrides the RDS port specified in the secret. Used to access existing Tunnels.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">boto3</span><span class="o">.</span><span class="n">set_stream_logger</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;botocore.credentials&#39;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambda_client</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">_ConfigurationManager</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aws_session_client</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">env_path</span> <span class="o">=</span> <span class="n">env_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db_client</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">s3_client</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">secret_client</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">need_ssh_tunnel</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_recursive_depth</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="c1"># Avoid recursive initialization logic</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;_recursive_depth&quot;</span> <span class="ow">or</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;_initialized&quot;</span> <span class="ow">or</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;_kwargs&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Check initialization state</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_initialized&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_recursive_depth&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_recursive_depth&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_initialize</span><span class="p">()</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_recursive_depth&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Proceed with regular attribute access</span>
+        <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ensures the instance is initialized, attempting to initialize if necessary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reload_config</span><span class="p">(</span><span class="n">env_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">env_path</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">except</span> <span class="n">InvalidConfigurationException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;AWS Client Hub initialization deferred, awaiting completion of environment initialization. Details: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">reload_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reloads the configuration from the specified environment path.</span>
+
+<span class="sd">        :param env_path: The path to the environment configuration file.</span>
+<span class="sd">        :type env_path: str, optional</span>
+<span class="sd">        :param kwargs: Additional keyword arguments to pass to the configuration manager.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">_ConfigurationManager</span><span class="p">(</span><span class="n">env_path</span><span class="o">=</span><span class="n">env_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_config_secret</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves and returns the ConfigurationManager instance, initializing it if not already done.</span>
+
+<span class="sd">        :returns: The initialized ConfigurationManager instance.</span>
+<span class="sd">        :rtype: _ConfigurationManager</span>
+
+<span class="sd">        :Usage:</span>
+<span class="sd">            config = client_manager.get_config()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reload_config</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
+
+
+    <span class="nd">@require_initialized</span>
+    <span class="k">def</span> <span class="nf">get_db_uri</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructs and returns the database URI from the secret configuration.</span>
+
+<span class="sd">        :returns: The database URI.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">RDS_DB_NAME</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dbname&#39;</span><span class="p">)</span>
+        <span class="n">RDS_ENDPOINT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;host&#39;</span><span class="p">)</span>
+        <span class="n">RDS_PASSWORD</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;password&#39;</span><span class="p">)</span>
+        <span class="n">RDS_PORT</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;port&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="n">RDS_USERNAME</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">)</span>
+
+        <span class="n">RDS_URI</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;postgresql://</span><span class="si">{</span><span class="n">RDS_USERNAME</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">RDS_PASSWORD</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">RDS_ENDPOINT</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">RDS_PORT</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">RDS_DB_NAME</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Constructed DB URI with endpoint: </span><span class="si">{</span><span class="n">RDS_ENDPOINT</span><span class="si">}</span><span class="s2">, port: </span><span class="si">{</span><span class="n">RDS_PORT</span><span class="si">}</span><span class="s2">, user: </span><span class="si">{</span><span class="n">RDS_USERNAME</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">RDS_URI</span>
+
+    <span class="nd">@require_initialized</span>
+    <span class="k">def</span> <span class="nf">get_db_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RDSClient</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves and returns the database client instance, initializing it if not already done.</span>
+
+<span class="sd">        :returns: The initialized database client instance.</span>
+<span class="sd">        :rtype: RDSClient</span>
+
+<span class="sd">        :Usage:</span>
+<span class="sd">            db_client = client_manager.get_db_client()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_rds_client</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_client</span>
+
+    <span class="nd">@require_initialized</span>
+    <span class="k">def</span> <span class="nf">get_s3_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Config</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">force_refresh</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">S3Client</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves and returns the S3 client instance, initializing it if not already done.</span>
+
+<span class="sd">        :param config: Optional configuration to initialize the S3 client. Defaults to None.</span>
+<span class="sd">        :type config: Config, optional</span>
+<span class="sd">        :param force_refresh: Flag to force re-initialization of the S3 client with the given config. Defaults to False.</span>
+<span class="sd">        :type force_refresh: bool</span>
+<span class="sd">        :returns: The initialized S3 client instance.</span>
+<span class="sd">        :rtype: S3Client</span>
+
+<span class="sd">        :Usage:</span>
+<span class="sd">            s3_client = client_manager.get_s3_client()</span>
+<span class="sd">            s3_client = client_manager.get_s3_client(config={&#39;region_name&#39;: &#39;us-west-1&#39;}, force_refresh=True)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">s3_client</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">force_refresh</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_s3_client</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">s3_client</span>
+
+    <span class="nd">@require_initialized</span>
+    <span class="k">def</span> <span class="nf">get_secret_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves and returns an AWS Secretmanager service client instance, initializing it if not already done.</span>
+
+<span class="sd">        :returns: The initialized AWS Secretmanager client instance.</span>
+<span class="sd">        :rtype: SecretsManagerClient</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">secret_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_other_client</span><span class="p">(</span><span class="n">aws_service</span><span class="o">=</span><span class="s1">&#39;secretsmanager&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_client</span>
+
+    <span class="nd">@require_initialized</span>
+    <span class="k">def</span> <span class="nf">get_lambda_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves and returns an AWS Lambda service client instance, initializing it if not already done.</span>
+
+<span class="sd">        :returns: The initialized AWS Lambda client instance.</span>
+<span class="sd">        :rtype: LambdaClient</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lambda_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_other_client</span><span class="p">(</span><span class="n">aws_service</span><span class="o">=</span><span class="s1">&#39;lambda&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_client</span>
+
+    <span class="nd">@require_initialized</span>
+    <span class="k">def</span> <span class="nf">get_service_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aws_service</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves and returns an AWS service client instance, initializing it if not already done.</span>
+
+<span class="sd">        :param aws_service: The name of the AWS service.</span>
+<span class="sd">        :type aws_service: str</span>
+
+<span class="sd">        :returns: The initialized AWS service client instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_other_client</span><span class="p">(</span><span class="n">aws_service</span><span class="o">=</span><span class="n">aws_service</span><span class="p">)</span>
+
+    <span class="nd">@require_initialized</span>
+    <span class="k">def</span> <span class="nf">_init_rds_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the RDS client with the necessary configuration derived from the AWS secrets manager.</span>
+
+<span class="sd">        :raises Exception: If there is an issue initializing the RDS client.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pghost_env_override</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PGHOST_OVERRIDE&quot;</span><span class="p">)</span>
+        <span class="n">pgport_env_override</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PGPORT_OVERRIDE&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">PGHOST</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">pghost_env_override</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">pghost_env_override</span><span class="p">,</span>
+                <span class="n">PGPORT</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;port&#39;</span><span class="p">])</span> <span class="k">if</span> <span class="n">pgport_env_override</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="n">pgport_env_override</span><span class="p">),</span>
+                <span class="n">PGDATABASE</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;dbname&#39;</span><span class="p">],</span>
+                <span class="n">PGUSER</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">],</span>
+                <span class="n">PGPASSWORD</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">]</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">need_ssh_tunnel</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">qa_host_check</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">]:</span>
+                    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;SSH_TUNNEL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">SSH_SERVER</span><span class="o">=</span><span class="n">coalesce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_server</span><span class="p">,</span> <span class="s1">&#39;34.201.30.245&#39;</span><span class="p">),</span>
+                                                <span class="n">SSH_PORT</span><span class="o">=</span><span class="n">coalesce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_port</span><span class="p">,</span> <span class="mi">22</span><span class="p">),</span>
+                                                <span class="n">SSH_USER</span><span class="o">=</span><span class="n">coalesce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_user</span><span class="p">,</span> <span class="s2">&quot;ec2-user&quot;</span><span class="p">),</span>
+                                                <span class="n">SSH_PASSWORD</span><span class="o">=</span><span class="n">coalesce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_password</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                                                <span class="n">SSH_KEY_PATH</span><span class="o">=</span><span class="n">coalesce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pem_path</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dev_host_check</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">]:</span>
+                    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;SSH_TUNNEL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">SSH_SERVER</span><span class="o">=</span><span class="n">coalesce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_server</span><span class="p">,</span> <span class="s1">&#39;44.193.207.105&#39;</span><span class="p">),</span>
+                                                <span class="n">SSH_PORT</span><span class="o">=</span><span class="n">coalesce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_port</span><span class="p">,</span> <span class="mi">22</span><span class="p">),</span>
+                                                <span class="n">SSH_USER</span><span class="o">=</span><span class="n">coalesce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_user</span><span class="p">,</span> <span class="s2">&quot;ec2-user&quot;</span><span class="p">),</span>
+                                                <span class="n">SSH_PASSWORD</span><span class="o">=</span><span class="n">coalesce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_password</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                                                <span class="n">SSH_KEY_PATH</span><span class="o">=</span><span class="n">coalesce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pem_path</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">config</span><span class="p">[</span><span class="s1">&#39;SSH_TUNNEL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">SSH_SERVER</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_server</span><span class="p">,</span>
+                                                <span class="n">SSH_PORT</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_port</span><span class="p">,</span>
+                                                <span class="n">SSH_USER</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_user</span><span class="p">,</span>
+                                                <span class="n">SSH_PASSWORD</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_password</span><span class="p">,</span>
+                                                <span class="n">SSH_KEY_PATH</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pem_path</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rds_handle_configuration</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;An exception occurred when initializing connection to DB: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="nd">@require_initialized</span>
+    <span class="k">def</span> <span class="nf">_rds_handle_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets up a psycopg2 Connection using a specified config.</span>
+
+<span class="sd">        :param config: The configuration dictionary for the RDS connection.</span>
+<span class="sd">        :type config: dict</span>
+
+<span class="sd">        :returns: The database client connection.</span>
+<span class="sd">        :rtype: psycopg2.extensions.connection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">host</span><span class="p">,</span> <span class="n">port</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;PGHOST&#39;</span><span class="p">],</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;PGPORT&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s1">&#39;SSH_TUNNEL&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ssh_manager</span> <span class="o">=</span> <span class="n">_SshTunnelManager</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+                <span class="n">host</span><span class="p">,</span> <span class="n">port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_manager</span><span class="o">.</span><span class="n">start_tunnel</span><span class="p">()</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;SSH Tunnel Connected&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SSH Tunnel failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="n">db_client</span> <span class="o">=</span> <span class="n">psycopg2</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;PGDATABASE&#39;</span><span class="p">],</span> <span class="n">user</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;PGUSER&#39;</span><span class="p">],</span>
+                                     <span class="n">password</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;PGPASSWORD&#39;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">db_client</span>
+
+    <span class="nd">@require_initialized</span>
+    <span class="k">def</span> <span class="nf">_init_s3_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the S3 client, setting it up with the correct region configuration.</span>
+
+<span class="sd">        :raises Exception: If there is an issue initializing the S3 client.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Creating session with profile: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">aws_session_client</span><span class="o">.</span><span class="n">profile_name</span><span class="si">}</span><span class="s2"> and region: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region_name</span><span class="si">}</span><span class="s2"> for service [s3]...&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">s3_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aws_session_client</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="s1">&#39;s3&#39;</span><span class="p">,</span> <span class="n">region_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region_name</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;S3 client initialized with region: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;An exception occurred when initializing connection to S3: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="nd">@require_initialized</span>
+    <span class="k">def</span> <span class="nf">_init_other_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aws_service</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes an AWS service client, setting it up with the correct region configuration.</span>
+
+<span class="sd">        :param aws_service: The name of the AWS service.</span>
+<span class="sd">        :type aws_service: str</span>
+
+<span class="sd">        :raises Exception: If there is an issue initializing the AWS service client.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Creating session with profile: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">aws_session_client</span><span class="o">.</span><span class="n">profile_name</span><span class="si">}</span><span class="s2"> and region: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region_name</span><span class="si">}</span><span class="s2"> for service [</span><span class="si">{</span><span class="n">aws_service</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+            <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aws_session_client</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="n">aws_service</span><span class="p">,</span> <span class="n">region_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region_name</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">aws_service</span><span class="si">}</span><span class="s2"> client initialized with region: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region_name</span><span class="si">}</span><span class="s2"> and profile: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">aws_session_client</span><span class="o">.</span><span class="n">profile_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">client</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;An exception occurred when initializing connection to </span><span class="si">{</span><span class="n">aws_service</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="k">def</span> <span class="nf">_get_config_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_id</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fetches and decodes the secret configuration from AWS Secrets Manager, setting up necessary client</span>
+<span class="sd">        configuration and determining if SSH tunneling is required.</span>
+
+<span class="sd">        :param secret_id: Optional; The ID of the secret to fetch. If not provided, uses the default secret ARN from the configuration.</span>
+<span class="sd">        :type secret_id: str, optional</span>
+
+<span class="sd">        :raises Exception: If there is an error fetching or interpreting the secret.</span>
+<span class="sd">        :raises ValueError: If the secret string is invalid.</span>
+
+<span class="sd">        :returns: The secret configuration as a dictionary if `secret_id` is provided.</span>
+<span class="sd">        :rtype: dict, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">sec_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">secret_arn</span> <span class="k">if</span> <span class="n">secret_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">secret_id</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Creating session with profile: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">aws_profile</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">aws_session_client</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span><span class="n">profile_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">aws_profile</span><span class="p">)</span>
+            <span class="n">client_object</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aws_session_client</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="s1">&#39;secretsmanager&#39;</span><span class="p">,</span> <span class="n">region_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region_name</span><span class="p">)</span>
+            <span class="n">secret_data</span> <span class="o">=</span> <span class="n">client_object</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">(</span><span class="n">SecretId</span><span class="o">=</span><span class="n">sec_id</span><span class="p">)[</span><span class="s1">&#39;SecretString&#39;</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">secret_data</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span> <span class="o">=</span> <span class="n">secret_data</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid secret string found </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">secret_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_determine_need_for_tunnel</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;An exception occurred when getting credentials from AWS: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="nd">@require_initialized</span>
+    <span class="k">def</span> <span class="nf">get_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_id</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">|</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fetches and decodes the secret configuration from AWS Secrets Manager, setting up necessary client</span>
+<span class="sd">        configuration and determining if SSH tunneling is required.</span>
+
+<span class="sd">        :param secret_id: Optional; The ID of the secret to fetch. If not provided, uses the default secret ARN from the configuration.</span>
+<span class="sd">        :type secret_id: str, optional</span>
+
+<span class="sd">        :raises Exception: If there is an error fetching or interpreting the secret.</span>
+<span class="sd">        :raises ValueError: If the secret string is invalid.</span>
+
+<span class="sd">        :returns: The secret configuration as a dictionary if `secret_id` is provided.</span>
+<span class="sd">        :rtype: dict, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_client</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">secret_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aws_session_client</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="s1">&#39;secretsmanager&#39;</span><span class="p">,</span> <span class="n">region_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">region_name</span><span class="p">)</span>
+            <span class="n">secret_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_client</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">(</span><span class="n">SecretId</span><span class="o">=</span><span class="n">secret_id</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">secret_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">secret_data</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                <span class="k">pass</span>
+
+            <span class="k">return</span> <span class="n">secret_data</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;An exception occurred when getting Secret from AWS: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+
+    <span class="k">def</span> <span class="nf">_determine_need_for_tunnel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines whether an SSH tunnel is required based on various configuration checks.</span>
+
+<span class="sd">        The method performs the following checks in sequence to determine if an SSH tunnel should be established:</span>
+
+<span class="sd">        1. **Host Check (QA/Dev/Prod)**:</span>
+<span class="sd">           - If the host string from the secret matches `qa_host_check`, `dev_host_check`, or `prod_host_check` in the configuration:</span>
+<span class="sd">               - If `qa_host_check` is found, an SSH tunnel may be required.</span>
+<span class="sd">               - If `dev_host_check` is found, an SSH tunnel may be required.</span>
+<span class="sd">               - If `prod_host_check` is found, it indicates the program is running in production, and no SSH tunnel is required. The process stops here.</span>
+<span class="sd">           - If none of these checks pass the server passed is unknown and no assumption on ssh requirements can be made, the method continues with further checks.</span>
+
+<span class="sd">        2. **AWS Deployment Flag**:</span>
+<span class="sd">           - If the `aws_deployment` flag is `False`, it indicates a local or non-AWS environment, which may require an SSH tunnel.</span>
+<span class="sd">           - If the flag is `True`, no tunnel is required, and the process stops.</span>
+
+<span class="sd">        3. **PGHOST Override**:</span>
+<span class="sd">           - If the `PGHOST_OVERRIDE` environment variable is not set, the host specified in the secret is used.</span>
+<span class="sd">           - If `PGHOST_OVERRIDE` is set, no tunnel is required, and the process stops.</span>
+
+<span class="sd">        4. **SSH Tunnel Credentials**:</span>
+<span class="sd">           - The method checks for the presence of SSH credentials such as PEM path or SSH password.</span>
+<span class="sd">           - If neither is present, it logs an error and proceeds without creating an SSH tunnel.</span>
+
+<span class="sd">        The method sets `self.need_ssh_tunnel` to `True` if all the checks pass and credentials are provided. If any check fails, it stops further processing and logs that no SSH tunnel is required.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            - Logs errors and warnings as necessary based on the checks performed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">continue_flag</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># host check</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">qa_host_check</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;QA host check passed: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">qa_host_check</span><span class="si">}</span><span class="s2"> found in secret string host: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dev_host_check</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dev host check passed: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dev_host_check</span><span class="si">}</span><span class="s2"> found in secret string host: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">prod_host_check</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret_string</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running on Production: No SSH tunnel required, continuing.&quot;</span><span class="p">)</span>
+            <span class="n">continue_flag</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="c1"># AWS deployment flag check</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">continue_flag</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">aws_deployment</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;AWS deployment flag is false, indicating a local or non-AWS environment.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;AWS deployment flag is true, indicating an AWS environment. No SSH tunnel required, continuing.&quot;</span><span class="p">)</span>
+                <span class="n">continue_flag</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># PGHOST_OVERRIDE check</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">continue_flag</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PGHOST_OVERRIDE&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No PGHOST_OVERRIDE environment variable detected, defaulting to using secret host.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PGHOST_OVERRIDE environment variable detected: </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;PGHOST_OVERRIDE&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">. No SSH tunnel required, continuing.&quot;</span><span class="p">)</span>
+                <span class="n">continue_flag</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># SSH tunnel configuration check</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">continue_flag</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pem_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SSH PEM path is specified: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">pem_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_password</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;SSH password is specified.&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ssh_server</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;No SSH credentials (PEM path or SSH password) provided. SSH credentials should be given, but proceeding without creating a tunnel.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No SSH arguments given, proceeding without creating a tunnel.&quot;</span><span class="p">)</span>
+                <span class="n">continue_flag</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Final check: if all checks pass but no credentials are provided</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">continue_flag</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;All conditions met for SSH tunnel.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">need_ssh_tunnel</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Determined no need for SSH tunnel creation.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_mask_sensitive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Masks sensitive information, showing only the first and last 3 characters.</span>
+
+<span class="sd">        :param value: The sensitive value to mask.</span>
+<span class="sd">        :type value: str</span>
+<span class="sd">        :returns: The masked value.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">6</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2">...</span><span class="si">{</span><span class="n">value</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">value</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Willem van der Schans.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
