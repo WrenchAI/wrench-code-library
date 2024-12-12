@@ -10,10 +10,10 @@ import psycopg2.extras
 from mypy_boto3_rds.client import RDSClient
 from psycopg2.pool import ThreadedConnectionPool
 
-from .._Internal._MockPandas import MockPandas
 from .AwsClientHub import AwsClientHub
 from ..Decorators.SingletonClass import SingletonClass
 from ..Tools import logger
+from .._Internal._MockPandas import MockPandas
 
 try:
     import pandas as pd

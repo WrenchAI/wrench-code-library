@@ -15,26 +15,25 @@
 
 import json
 import os
+from functools import wraps
 from typing import Optional, Union
 
 import boto3
 import psycopg2
 from botocore.config import Config
+from mypy_boto3_lambda.client import LambdaClient
+from mypy_boto3_rds.client import RDSClient
+from mypy_boto3_s3.client import S3Client
+from mypy_boto3_secretsmanager.client import SecretsManagerClient
 
+from ..Decorators.SingletonClass import SingletonClass
 from ..Exceptions import IncompleteInitializationException
 from ..Exceptions import InvalidConfigurationException
-from ..Decorators.SingletonClass import SingletonClass
 from ..Tools import logger
+from ..Tools.Coalesce import coalesce
 from .._Internal._ConfigurationManager import _ConfigurationManager
 from .._Internal._SshTunnelManager import _SshTunnelManager
 
-from ..Tools.Coalesce import coalesce
-from mypy_boto3_s3.client import S3Client
-from mypy_boto3_rds.client import RDSClient, Exceptions
-from mypy_boto3_secretsmanager.client import SecretsManagerClient
-from mypy_boto3_lambda.client import LambdaClient
-
-from functools import wraps
 
 def require_initialized(method):
     """

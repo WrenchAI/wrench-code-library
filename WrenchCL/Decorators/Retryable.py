@@ -6,6 +6,7 @@ from json import JSONDecodeError
 import requests
 from botocore.exceptions import ClientError, BotoCoreError
 
+
 def Retryable(_func=None, *, max_retries=5, retry_on_exceptions=None, delay=2, verbose=False):
     """
     A decorator that retries a function call a specified number of times if it raises an exception or if the request status code is not 200.
