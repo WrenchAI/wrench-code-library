@@ -88,26 +88,25 @@
 
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">boto3</span>
 <span class="kn">import</span> <span class="nn">psycopg2</span>
 <span class="kn">from</span> <span class="nn">botocore.config</span> <span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span> <span class="nn">mypy_boto3_lambda.client</span> <span class="kn">import</span> <span class="n">LambdaClient</span>
+<span class="kn">from</span> <span class="nn">mypy_boto3_rds.client</span> <span class="kn">import</span> <span class="n">RDSClient</span>
+<span class="kn">from</span> <span class="nn">mypy_boto3_s3.client</span> <span class="kn">import</span> <span class="n">S3Client</span>
+<span class="kn">from</span> <span class="nn">mypy_boto3_secretsmanager.client</span> <span class="kn">import</span> <span class="n">SecretsManagerClient</span>
 
+<span class="kn">from</span> <span class="nn">..Decorators.SingletonClass</span> <span class="kn">import</span> <span class="n">SingletonClass</span>
 <span class="kn">from</span> <span class="nn">..Exceptions</span> <span class="kn">import</span> <span class="n">IncompleteInitializationException</span>
 <span class="kn">from</span> <span class="nn">..Exceptions</span> <span class="kn">import</span> <span class="n">InvalidConfigurationException</span>
-<span class="kn">from</span> <span class="nn">..Decorators.SingletonClass</span> <span class="kn">import</span> <span class="n">SingletonClass</span>
 <span class="kn">from</span> <span class="nn">..Tools</span> <span class="kn">import</span> <span class="n">logger</span>
+<span class="kn">from</span> <span class="nn">..Tools.Coalesce</span> <span class="kn">import</span> <span class="n">coalesce</span>
 <span class="kn">from</span> <span class="nn">.._Internal._ConfigurationManager</span> <span class="kn">import</span> <span class="n">_ConfigurationManager</span>
 <span class="kn">from</span> <span class="nn">.._Internal._SshTunnelManager</span> <span class="kn">import</span> <span class="n">_SshTunnelManager</span>
 
-<span class="kn">from</span> <span class="nn">..Tools.Coalesce</span> <span class="kn">import</span> <span class="n">coalesce</span>
-<span class="kn">from</span> <span class="nn">mypy_boto3_s3.client</span> <span class="kn">import</span> <span class="n">S3Client</span>
-<span class="kn">from</span> <span class="nn">mypy_boto3_rds.client</span> <span class="kn">import</span> <span class="n">RDSClient</span><span class="p">,</span> <span class="n">Exceptions</span>
-<span class="kn">from</span> <span class="nn">mypy_boto3_secretsmanager.client</span> <span class="kn">import</span> <span class="n">SecretsManagerClient</span>
-<span class="kn">from</span> <span class="nn">mypy_boto3_lambda.client</span> <span class="kn">import</span> <span class="n">LambdaClient</span>
-
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
 
 <div class="viewcode-block" id="require_initialized">
 <a class="viewcode-back" href="../../../modules/WrenchCL.Connect.html#WrenchCL.Connect.AwsClientHub.require_initialized">[docs]</a>
