@@ -11,7 +11,6 @@ from datetime import datetime, timedelta, date
 from decimal import Decimal
 from inspect import currentframe
 from textwrap import fill
-from turtledemo.nim import COLOR
 from typing import Any, Optional, Union
 
 from .._Internal._MockPandas import MockPandas
