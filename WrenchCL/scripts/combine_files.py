@@ -5,8 +5,8 @@ from typing import List, Tuple, Optional
 
 from colorama import Fore, Style, init
 
-from ..Tools.MaybeMonad import Maybe
 from ..Tools import logger
+from ..Tools.MaybeMonad import Maybe
 
 init(autoreset=True)
 

@@ -1,6 +1,8 @@
-import warnings
 import inspect
+import warnings
+
 from .WrenchLogger import Logger
+
 
 # Inspect the stack to see how the module was imported
 def check_import_usage():

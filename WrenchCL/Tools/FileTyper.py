@@ -13,23 +13,17 @@
 #  For inquiries, please contact Willem van der Schans through the official Wrench.AI channels or directly via GitHub at [Kydoimos97](https://github.com/Kydoimos97).
 #
 import base64
+import mimetypes
 from io import BytesIO
 from pathlib import Path
 from typing import Union, Optional, Tuple
+
 import filetype
 import requests
 from botocore.response import StreamingBody
+
 from .Image2B64 import validate_base64
 
-
-import base64
-from io import BytesIO
-from pathlib import Path
-from typing import Union, Optional, Tuple
-import mimetypes
-import filetype
-import requests
-from botocore.response import StreamingBody
 
 class UnsupportedFileTypeError(Exception):
     pass

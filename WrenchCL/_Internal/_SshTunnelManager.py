@@ -13,8 +13,8 @@
 #  For inquiries, please contact Willem van der Schans through the official Wrench.AI channels or directly via GitHub at [Kydoimos97](https://github.com/Kydoimos97).
 #
 from sshtunnel import SSHTunnelForwarder
-from ..Tools import logger
 
+from ..Tools import logger
 
 logger.suppress_package_logger("paramiko")
 
